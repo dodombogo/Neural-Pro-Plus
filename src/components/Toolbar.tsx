@@ -5,8 +5,6 @@ import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { PlaybackSettings } from '../types/types';
 import { TranscriptFormatType, TRANSCRIPT_FORMATS } from '../types/transcriptFormats';
 
-type ExportFormat = 'txt' | 'html' | 'doc' | 'pdf';
-
 interface ToolbarProps {
   playbackSettings: PlaybackSettings;
   setPlaybackSettings: (settings: PlaybackSettings) => void;
@@ -27,7 +25,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   transcriptFormat
 }) => {
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('txt');
+  const [exportFormat, setExportFormat] = useState<'txt' | 'html' | 'doc' | 'pdf'>('txt');
 
   const handleExport = () => {
     if (!content) return;
@@ -131,7 +129,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <div className="flex items-center gap-2">
         <select
           value={exportFormat}
-          onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
+          onChange={(e) => setExportFormat(e.target.value as 'txt' | 'html' | 'doc' | 'pdf')}
           className="bg-gray-800 text-gray-200 rounded-lg px-2 py-1 text-xs border border-gray-700"
         >
           <option value="txt">Plain Text (.txt)</option>
@@ -144,6 +142,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onClick={handleExport}
           disabled={!content}
           className="flex items-center gap-1.5 px-2 py-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          data-export-button
         >
           <Download className="w-3.5 h-3.5" />
           Export

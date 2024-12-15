@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, HelpCircle, FileText, Home, Github, Settings, ChevronDown, Volume2, Clock, Keyboard, Monitor, Moon, Sun } from 'lucide-react';
+import { Menu, HelpCircle, FileText, Home, Github, Settings, ChevronDown, Volume2, Clock, Monitor, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from './Logo';
 import { useSettingsStore } from '../store/settingsStore';
@@ -54,12 +54,6 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
 
   const handleSettingsItemClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-  };
-
-  const handleKeyboardShortcutsClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsSettingsOpen(false);
-    onSettingsClick();
   };
 
   return (
@@ -193,15 +187,6 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
                           </div>
                         </button>
                       </div>
-
-                      {/* Keyboard Shortcuts */}
-                      <button
-                        onClick={handleKeyboardShortcutsClick}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        <Keyboard className="w-4 h-4 text-cyan-400" />
-                        Keyboard Shortcuts
-                      </button>
                     </div>
                   </motion.div>
                 )}
