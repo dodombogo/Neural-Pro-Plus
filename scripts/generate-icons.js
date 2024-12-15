@@ -4,25 +4,38 @@ import path from 'path';
 
 const sizes = [192, 512];
 const backgroundColor = '#111827';
-const iconText = 'N+';
+
+// Neural Pro+ logo SVG
+const generateLogoSVG = (size) => `
+<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="45" fill="${backgroundColor}"/>
+  
+  <!-- Neural Network Lines -->
+  <g stroke="#60A5FA" stroke-opacity="0.5" stroke-width="2">
+    <path d="M30 30 L50 50 L70 30"/>
+    <path d="M30 50 L50 50 L70 50"/>
+    <path d="M30 70 L50 50 L70 70"/>
+  </g>
+
+  <!-- Neural Network Nodes -->
+  <g>
+    <circle cx="30" cy="30" r="4" fill="#60A5FA"/>
+    <circle cx="30" cy="50" r="4" fill="#60A5FA"/>
+    <circle cx="30" cy="70" r="4" fill="#60A5FA"/>
+    <circle cx="50" cy="50" r="6" fill="#3B82F6"/>
+    <circle cx="70" cy="30" r="4" fill="#60A5FA"/>
+    <circle cx="70" cy="50" r="4" fill="#60A5FA"/>
+    <circle cx="70" cy="70" r="4" fill="#60A5FA"/>
+  </g>
+
+  <!-- Outer Ring -->
+  <circle cx="50" cy="50" r="45" stroke="#60A5FA" stroke-width="2" fill="none"/>
+</svg>
+`;
 
 async function generateIcon(size) {
-  const svg = `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${size}" height="${size}" fill="${backgroundColor}"/>
-      <text
-        x="50%"
-        y="50%"
-        font-family="Arial, sans-serif"
-        font-size="${size * 0.5}"
-        font-weight="bold"
-        fill="#60A5FA"
-        text-anchor="middle"
-        dominant-baseline="central"
-      >${iconText}</text>
-    </svg>
-  `;
-
+  const svg = generateLogoSVG(size);
   const outputPath = path.join(process.cwd(), 'public', `icon-${size}.png`);
   
   await sharp(Buffer.from(svg))

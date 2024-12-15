@@ -15,25 +15,29 @@
       "src": "/Neural-Pro-Plus/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/Neural-Pro-Plus/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/Neural-Pro-Plus/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
     {
       "src": "/Neural-Pro-Plus/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "form_factor": "wide",
+      "label": "Neural Pro+ Transcription App"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Project",
+      "url": "/Neural-Pro-Plus/projects",
+      "icons": [{ "src": "/Neural-Pro-Plus/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
