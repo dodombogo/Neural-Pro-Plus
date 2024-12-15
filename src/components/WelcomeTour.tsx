@@ -72,7 +72,11 @@ export const WelcomeTour = ({ isOpen, onClose }: WelcomeTourProps) => {
                 Welcome to Neural Pro+
               </Dialog.Title>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  localStorage.setItem('hasSeenTour', 'true');
+                  onClose();
+                  setCurrentStep(0);
+                }}
                 className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -110,7 +114,11 @@ export const WelcomeTour = ({ isOpen, onClose }: WelcomeTourProps) => {
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    localStorage.setItem('hasSeenTour', 'true');
+                    onClose();
+                    setCurrentStep(0);
+                  }}
                   className="btn-secondary"
                 >
                   Skip

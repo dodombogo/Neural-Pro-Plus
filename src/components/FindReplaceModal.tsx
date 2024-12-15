@@ -23,6 +23,16 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
   const [currentMatch, setCurrentMatch] = useState(-1);
   const findInputRef = useRef<HTMLInputElement>(null);
 
+  // Clear fields when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setFindText('');
+      setReplaceText('');
+      setMatches([]);
+      setCurrentMatch(-1);
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen && initialSearchText) {
       setFindText(initialSearchText);
@@ -155,7 +165,20 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
             <h2 className="text-sm font-medium text-gray-200">Find & Replace</h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              // Remove any existing highlights before closing
+              const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
+              if (textArea) {
+                const existingHighlights = textArea.querySelectorAll('.current-match');
+                existingHighlights.forEach(highlight => {
+                  const parent = highlight.parentNode;
+                  if (parent) {
+                    parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
+                  }
+                });
+              }
+              onClose();
+            }}
             className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
