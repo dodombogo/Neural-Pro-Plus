@@ -10,13 +10,13 @@ interface ShortcutsState {
 }
 
 const defaultShortcuts: KeyboardShortcut[] = [
-  { id: 'playPause', description: 'Play/Pause/Seek 1s', defaultKeys: 'Escape', currentKeys: 'Escape' },
-  { id: 'seekBackward5', description: 'Seek backward 5 seconds', defaultKeys: 'F1', currentKeys: 'F1' },
-  { id: 'seekForward5', description: 'Seek forward 5 seconds', defaultKeys: 'F2', currentKeys: 'F2' },
-  { id: 'cycleSpeed', description: 'Change playback speed', defaultKeys: 'F3', currentKeys: 'F3' },
-  { id: 'export', description: 'Export options', defaultKeys: 'F4', currentKeys: 'F4' },
-  { id: 'findReplace', description: 'Find and replace', defaultKeys: 'Control+F', currentKeys: 'Control+F' },
-  { id: 'insertTimestamp', description: 'Insert timestamp', defaultKeys: 'F8', currentKeys: 'F8' },
+  { id: 'playPause', description: 'Play/Pause/Seek 1s', defaultKey: 'Escape', currentKey: 'Escape' },
+  { id: 'seekBackward5', description: 'Seek backward 5 seconds', defaultKey: 'F1', currentKey: 'F1' },
+  { id: 'seekForward5', description: 'Seek forward 5 seconds', defaultKey: 'F2', currentKey: 'F2' },
+  { id: 'cycleSpeed', description: 'Change playback speed', defaultKey: 'F3', currentKey: 'F3' },
+  { id: 'export', description: 'Export options', defaultKey: 'F4', currentKey: 'F4' },
+  { id: 'findReplace', description: 'Find and replace', defaultKey: 'Control+F', currentKey: 'Control+F' },
+  { id: 'insertTimestamp', description: 'Insert timestamp', defaultKey: 'F8', currentKey: 'F8' },
 ];
 
 export const useShortcutsStore = create<ShortcutsState>()(
@@ -26,13 +26,13 @@ export const useShortcutsStore = create<ShortcutsState>()(
       updateShortcut: (id, newKeys) =>
         set((state) => ({
           shortcuts: state.shortcuts.map((s) =>
-            s.id === id ? { ...s, currentKeys: newKeys } : s
+            s.id === id ? { ...s, currentKey: newKeys } : s
           ),
         })),
       resetToDefault: (id) =>
         set((state) => ({
           shortcuts: state.shortcuts.map((s) =>
-            s.id === id ? { ...s, currentKeys: s.defaultKeys } : s
+            s.id === id ? { ...s, currentKey: s.defaultKey } : s
           ),
         })),
       resetAllToDefault: () =>

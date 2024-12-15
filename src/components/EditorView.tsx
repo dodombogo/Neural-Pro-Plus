@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TranscriptStats } from './TranscriptStats';
 import { TranscriptFormatType } from '../types/transcriptFormats';
 import { formatTranscript } from '../utils/transcriptFormatter';
+import { SettingsModal } from './SettingsModal';
 
 // Move API key to environment variable or configuration file
 const ASSEMBLY_API_KEY = import.meta.env.VITE_ASSEMBLY_API_KEY;
@@ -48,6 +49,7 @@ export const EditorView = () => {
   const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const lastSaved = useAutoSaveStore(state => state.lastSaved);
   const setLastSaved = useAutoSaveStore(state => state.setLastSaved);
   const { defaultPlaybackSpeed, defaultVolume } = useSettingsStore();
@@ -377,6 +379,10 @@ export const EditorView = () => {
     }
   };
 
+  const onOpenSettings = () => {
+    setIsSettingsOpen(true);
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">
       {/* Fixed Control Panel below header */}
@@ -530,6 +536,7 @@ export const EditorView = () => {
                 isSaving={isSaving}
                 content={transcriptContent}
                 transcriptFormat={selectedFormat}
+                onOpenSettings={onOpenSettings}
               />
             </motion.div>
 
@@ -539,6 +546,13 @@ export const EditorView = () => {
               content={transcriptContent}
               onContentChange={handleContentUpdate}
               initialSearchText={selectedText}
+            />
+
+            <SettingsModal
+              isOpen={isSettingsOpen}
+              onClose={() => setIsSettingsOpen(false)}
+              playbackSettings={playbackSettings}
+              onPlaybackSettingsChange={setPlaybackSettings}
             />
           </motion.div>
         )}

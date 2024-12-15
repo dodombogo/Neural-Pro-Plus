@@ -1,5 +1,14 @@
 import { TranscriptFormatType } from './transcriptFormats';
 
+export type TimestampFormat = 'HH:mm:ss' | 'mm:ss' | 'ss.SSS' | 'none';
+
+export interface KeyboardShortcut {
+  id: string;
+  description: string;
+  defaultKey: string;
+  currentKey: string;
+}
+
 export interface Speaker {
   id: string;
   name: string;

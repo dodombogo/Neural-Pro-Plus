@@ -51,7 +51,7 @@ export const KeyboardShortcutsModal = ({ isOpen, onClose, onOpenSettings }: Keyb
               >
                 <span className="text-gray-300">{shortcut.description}</span>
                 <kbd className="px-3 py-1.5 bg-gray-800 text-gray-300 rounded-lg font-mono text-sm">
-                  {shortcut.currentKeys}
+                  {shortcut.currentKey}
                 </kbd>
               </div>
             ))}

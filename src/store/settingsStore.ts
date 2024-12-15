@@ -20,7 +20,7 @@ export const useSettingsStore = create<SettingsState>()(
       defaultPlaybackSpeed: 1,
       defaultVolume: 1,
       autoSaveInterval: 2000,
-      timestampFormat: 'MM:SS',
+      timestampFormat: 'mm:ss',
       setDefaultPlaybackSpeed: (speed) => set({ defaultPlaybackSpeed: speed }),
       setDefaultVolume: (volume) => set({ defaultVolume: volume }),
       setAutoSaveInterval: (interval) => set({ autoSaveInterval: interval }),

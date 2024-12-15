@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://dodombogo.github.io/Neural-Pro-Plus/",
+  "homepage": "https://oNeural.github.io/Neural-Pro-Plus/",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

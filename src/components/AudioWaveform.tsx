@@ -55,7 +55,6 @@ export const AudioWaveform = forwardRef<HTMLAudioElement, AudioWaveformProps>(({
         cursorColor: '#c7d2fe',
         barWidth: 1,
         barGap: 1,
-        responsive: true,
         height: 24,
         normalize: true,
         backend: 'WebAudio',

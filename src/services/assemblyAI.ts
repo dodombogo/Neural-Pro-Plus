@@ -152,4 +152,17 @@ export const pollTranscriptionResult = async (
     }
     throw new TranscriptionError(`Polling failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+};
+
+export const startTranscription = async (
+  audioFile: File,
+  apiKey: string,
+  onProgress: (status: string) => void
+): Promise<TranscriptionResponse> => {
+  try {
+    const transcriptId = await uploadAudioToAssemblyAI(audioFile, apiKey);
+    return await pollTranscriptionResult(transcriptId, apiKey, onProgress);
+  } catch (error) {
+    throw new TranscriptionError(`Transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }; 
