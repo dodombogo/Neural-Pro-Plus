@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ProjectsView } from './components/ProjectsView';
 import { EditorView } from './components/EditorView';
 import { WelcomeTour } from './components/WelcomeTour';
@@ -19,6 +19,7 @@ const BackgroundWrapper: React.FC = () => {
 const AppContent: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isWelcomeTourOpen, setIsWelcomeTourOpen] = React.useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
   React.useEffect(() => {
     const hasSeenTour = localStorage.getItem('hasSeenTour');
@@ -33,6 +34,7 @@ const AppContent: React.FC = () => {
       <Header 
         onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         onHelpClick={() => setIsWelcomeTourOpen(true)}
+        onSettingsClick={() => setIsSettingsOpen(true)}
       />
       
       <AnimatePresence>
@@ -51,7 +53,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomeView />} />
           <Route path="/projects" element={<ProjectsView />} />
-          <Route path="/editor/:projectId?" element={<EditorView />} />
+          <Route path="/editor/:projectId?" element={<EditorView isSettingsOpen={isSettingsOpen} onSettingsClose={() => setIsSettingsOpen(false)} />} />
         </Routes>
       </main>
 
