@@ -10,16 +10,37 @@ interface BeforeInstallPromptEvent extends Event {
 export const InstallPWA = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    // Check if already installed
+    const checkInstalled = () => {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setIsInstalled(true);
+      }
+    };
+    checkInstalled();
+
+    // Listen for install prompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsVisible(true);
     };
 
+    // Listen for installation
+    const installHandler = () => {
+      setIsInstalled(true);
+      setIsVisible(false);
+    };
+
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', installHandler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -32,11 +53,18 @@ export const InstallPWA = () => {
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
         setIsVisible(false);
+        setIsInstalled(true);
+        console.log('PWA installed successfully');
+      } else {
+        console.log('PWA installation declined');
       }
     } catch (error) {
       console.error('Error installing PWA:', error);
     }
   };
+
+  // Don't show if already installed
+  if (isInstalled) return null;
 
   return (
     <AnimatePresence>

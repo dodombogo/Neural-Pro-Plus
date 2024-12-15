@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, HelpCircle, FileText, Home, Github, Settings, ChevronDown, Volume2, Clock, Keyboard, Monitor, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,7 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { defaultPlaybackSpeed, defaultVolume, setDefaultPlaybackSpeed, setDefaultVolume } = useSettingsStore();
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll effect
   useEffect(() => {
@@ -39,12 +40,27 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
 
   // Close settings dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => setIsSettingsOpen(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
     if (isSettingsOpen) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isSettingsOpen]);
+
+  const handleSettingsItemClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleKeyboardShortcutsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSettingsOpen(false);
+    onSettingsClick();
+  };
 
   return (
     <header 
@@ -91,7 +107,7 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
           {/* Right Section */}
           <div className="flex items-center gap-3">
             {/* Settings Button with Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={settingsRef}>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -110,6 +126,7 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute right-0 mt-2 w-72 bg-gray-800 rounded-lg shadow-xl border border-gray-700 overflow-hidden"
+                    onClick={handleSettingsItemClick}
                   >
                     <div className="p-4 space-y-4">
                       {/* Playback Speed */}
@@ -157,7 +174,10 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
                           Theme
                         </label>
                         <button
-                          onClick={() => setIsDarkMode(!isDarkMode)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsDarkMode(!isDarkMode);
+                          }}
                           className="w-full flex items-center justify-between px-3 py-2 bg-gray-700 rounded-lg text-sm text-gray-200 hover:bg-gray-600 transition-colors"
                         >
                           <span className="flex items-center gap-2">
@@ -176,10 +196,7 @@ export const Header = ({ onMobileMenuToggle, onHelpClick, onSettingsClick }: Hea
 
                       {/* Keyboard Shortcuts */}
                       <button
-                        onClick={() => {
-                          setIsSettingsOpen(false);
-                          onSettingsClick();
-                        }}
+                        onClick={handleKeyboardShortcutsClick}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
                       >
                         <Keyboard className="w-4 h-4 text-cyan-400" />

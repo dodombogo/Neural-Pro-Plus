@@ -20,6 +20,7 @@ import { TranscriptStats } from './TranscriptStats';
 import { TranscriptFormatType } from '../types/transcriptFormats';
 import { formatTranscript } from '../utils/transcriptFormatter';
 import { SettingsModal } from './SettingsModal';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 
 // Move API key to environment variable or configuration file
 const ASSEMBLY_API_KEY = import.meta.env.VITE_ASSEMBLY_API_KEY;
@@ -50,6 +51,7 @@ export const EditorView = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const lastSaved = useAutoSaveStore(state => state.lastSaved);
   const setLastSaved = useAutoSaveStore(state => state.setLastSaved);
   const { defaultPlaybackSpeed, defaultVolume } = useSettingsStore();
@@ -552,6 +554,15 @@ export const EditorView = () => {
               onClose={() => setIsSettingsOpen(false)}
               playbackSettings={playbackSettings}
               onPlaybackSettingsChange={setPlaybackSettings}
+            />
+
+            <KeyboardShortcutsModal
+              isOpen={isKeyboardShortcutsOpen}
+              onClose={() => setIsKeyboardShortcutsOpen(false)}
+              onOpenSettings={() => {
+                setIsKeyboardShortcutsOpen(false);
+                setIsSettingsOpen(true);
+              }}
             />
           </motion.div>
         )}
