@@ -53,7 +53,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomeView />} />
           <Route path="/projects" element={<ProjectsView />} />
-          <Route path="/editor/:projectId?" element={<EditorView isSettingsOpen={isSettingsOpen} onSettingsClose={() => setIsSettingsOpen(false)} />} />
+          <Route path="/editor/:projectId?" element={<EditorView />} />
         </Routes>
       </main>
 
