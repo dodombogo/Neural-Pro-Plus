@@ -1,6 +1,6 @@
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/Neural-Pro-Plus/sw.js')
+    navigator.serviceWorker.register('./sw.js', { scope: '/Neural-Pro-Plus/' })
       .then((registration) => {
         console.log('ServiceWorker registration successful:', registration.scope);
       })

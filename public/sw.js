@@ -1,12 +1,12 @@
 const CACHE_NAME = 'neural-pro-plus-v1';
 const urlsToCache = [
-  '/Neural-Pro-Plus/',
-  '/Neural-Pro-Plus/index.html',
-  '/Neural-Pro-Plus/assets/index.js',
-  '/Neural-Pro-Plus/assets/index.css',
-  '/Neural-Pro-Plus/manifest.json',
-  '/Neural-Pro-Plus/icon-192.png',
-  '/Neural-Pro-Plus/icon-512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './assets/index.css',
+  './assets/index.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -14,6 +14,22 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(urlsToCache))
   );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
