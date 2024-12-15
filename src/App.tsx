@@ -9,8 +9,8 @@ import { HomeView } from './components/HomeView';
 import { NeuralBackground } from './components/NeuralBackground';
 import { AnimatePresence } from 'framer-motion';
 import { SettingsModal } from './components/SettingsModal';
-import { InstallPWA } from './components/InstallPWA';
 import { useSettingsStore } from './store/settingsStore';
+import { InstallPWA } from './components/InstallPWA';
 import './index.css';
 
 const BackgroundWrapper: React.FC = () => {

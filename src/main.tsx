@@ -1,13 +1,25 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import App from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { registerServiceWorker } from './utils/registerSW';
+import './index.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+const container = document.getElementById('root');
+
+if (!container) {
+  throw new Error('Failed to find the root element');
+}
+
+const root = createRoot(container);
 
 // Register service worker
 registerServiceWorker();
+
+root.render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </React.StrictMode>
+);
