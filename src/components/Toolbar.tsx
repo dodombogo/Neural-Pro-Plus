@@ -15,7 +15,6 @@ interface ToolbarProps {
   isSaving: boolean;
   content: string;
   transcriptFormat?: TranscriptFormatType;
-  onOpenSettings: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -25,8 +24,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   lastSaved,
   isSaving,
   content,
-  transcriptFormat,
-  onOpenSettings
+  transcriptFormat
 }) => {
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('txt');
@@ -171,7 +169,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <KeyboardShortcutsModal
         isOpen={isKeyboardShortcutsOpen}
         onClose={() => setIsKeyboardShortcutsOpen(false)}
-        onOpenSettings={onOpenSettings}
+        onOpenSettings={() => {}}
       />
     </div>
   );
