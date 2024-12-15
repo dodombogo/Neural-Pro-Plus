@@ -536,7 +536,6 @@ export const EditorView = () => {
                 isSaving={isSaving}
                 content={transcriptContent}
                 transcriptFormat={selectedFormat}
-                onOpenSettings={onOpenSettings}
               />
             </motion.div>
 
