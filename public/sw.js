@@ -1,12 +1,12 @@
 const CACHE_NAME = 'neural-pro-plus-v1';
 const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './assets/index.css',
-  './assets/index.js'
+  '/Neural-Pro-Plus/',
+  '/Neural-Pro-Plus/index.html',
+  '/Neural-Pro-Plus/manifest.json',
+  '/Neural-Pro-Plus/icon-192.png',
+  '/Neural-Pro-Plus/icon-512.png',
+  '/Neural-Pro-Plus/assets/index.css',
+  '/Neural-Pro-Plus/assets/index.js'
 ];
 
 self.addEventListener('install', (event) => {
