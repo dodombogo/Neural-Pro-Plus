@@ -8,6 +8,8 @@ import { MobileNav } from './components/MobileNav';
 import { HomeView } from './components/HomeView';
 import { NeuralBackground } from './components/NeuralBackground';
 import { AnimatePresence } from 'framer-motion';
+import { SettingsModal } from './components/SettingsModal';
+import { useSettingsStore } from './store/settingsStore';
 import './index.css';
 
 const BackgroundWrapper: React.FC = () => {
@@ -20,6 +22,11 @@ const AppContent: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isWelcomeTourOpen, setIsWelcomeTourOpen] = React.useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const { defaultPlaybackSpeed, defaultVolume } = useSettingsStore();
+  const [playbackSettings, setPlaybackSettings] = React.useState({
+    speed: defaultPlaybackSpeed,
+    volume: defaultVolume
+  });
 
   React.useEffect(() => {
     const hasSeenTour = localStorage.getItem('hasSeenTour');
@@ -60,6 +67,13 @@ const AppContent: React.FC = () => {
       <WelcomeTour 
         isOpen={isWelcomeTourOpen}
         onClose={() => setIsWelcomeTourOpen(false)}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        playbackSettings={playbackSettings}
+        onPlaybackSettingsChange={setPlaybackSettings}
       />
     </div>
   );

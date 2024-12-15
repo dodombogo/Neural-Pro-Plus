@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Settings, Save, Download, Keyboard, FileText, Gauge } from 'lucide-react';
+import { Save, Download, Keyboard, FileText, Gauge } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { SettingsModal } from './SettingsModal';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { PlaybackSettings } from '../types/types';
 import { TranscriptFormatType, TRANSCRIPT_FORMATS } from '../types/transcriptFormats';
@@ -16,6 +15,7 @@ interface ToolbarProps {
   isSaving: boolean;
   content: string;
   transcriptFormat?: TranscriptFormatType;
+  onOpenSettings: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -25,9 +25,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   lastSaved,
   isSaving,
   content,
-  transcriptFormat
+  transcriptFormat,
+  onOpenSettings
 }) => {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('txt');
 
@@ -166,31 +166,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <Keyboard className="w-3.5 h-3.5" />
           <span className="text-xs">Shortcuts</span>
         </button>
-
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="px-2 py-1 hover:bg-gray-800 rounded-lg transition-colors border border-gray-700 flex items-center gap-1.5"
-          title="Settings"
-        >
-          <Settings className="w-3.5 h-3.5" />
-          <span className="text-xs">Settings</span>
-        </button>
       </div>
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        playbackSettings={playbackSettings}
-        onPlaybackSettingsChange={setPlaybackSettings}
-      />
 
       <KeyboardShortcutsModal
         isOpen={isKeyboardShortcutsOpen}
         onClose={() => setIsKeyboardShortcutsOpen(false)}
-        onOpenSettings={() => {
-          setIsKeyboardShortcutsOpen(false);
-          setIsSettingsOpen(true);
-        }}
+        onOpenSettings={onOpenSettings}
       />
     </div>
   );
