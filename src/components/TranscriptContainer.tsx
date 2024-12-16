@@ -19,11 +19,17 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const contentRef = useRef(content);
 
-  // Update editor content when prop changes
+  // Update content reference when prop changes
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
+
+  // Update editor content when prop changes and Find & Replace is closed
   useEffect(() => {
     if (editorRef.current && !isFindReplaceOpen) {
-      editorRef.current.innerHTML = content;
+      editorRef.current.innerHTML = contentRef.current;
     }
   }, [content, isFindReplaceOpen]);
 
@@ -41,7 +47,11 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
 
   const handleContentChange = () => {
     if (!editorRef.current || isFindReplaceOpen) return;
-    onContentChange(editorRef.current.innerText);
+    const newContent = editorRef.current.innerText;
+    if (newContent !== contentRef.current) {
+      contentRef.current = newContent;
+      onContentChange(newContent);
+    }
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -87,7 +97,11 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => onOpenFindReplace()}
+            onClick={() => {
+              const selection = window.getSelection();
+              const selectedText = selection ? selection.toString() : '';
+              onOpenFindReplace();
+            }}
             className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
           >
             <Search className="w-4 h-4" />

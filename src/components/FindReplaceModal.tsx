@@ -22,7 +22,18 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
   const [matches, setMatches] = useState<number[]>([]);
   const [currentMatch, setCurrentMatch] = useState(-1);
   const findInputRef = useRef<HTMLInputElement>(null);
-  const originalContent = useRef(content);
+  const editorRef = useRef<HTMLElement | null>(null);
+  const contentRef = useRef(content);
+
+  // Update content reference when content changes
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
+
+  // Get editor reference
+  useEffect(() => {
+    editorRef.current = document.querySelector('[contenteditable="true"]');
+  }, [isOpen]);
 
   // Reset state when modal is closed
   useEffect(() => {
@@ -32,12 +43,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       setMatches([]);
       setCurrentMatch(-1);
       restoreOriginalContent();
-    }
-  }, [isOpen]);
-
-  // Set initial search text if provided
-  useEffect(() => {
-    if (isOpen && initialSearchText) {
+    } else if (initialSearchText) {
       setFindText(initialSearchText);
     }
   }, [isOpen, initialSearchText]);
@@ -50,14 +56,9 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     }
   }, [isOpen]);
 
-  // Update original content reference when content changes
-  useEffect(() => {
-    originalContent.current = content;
-  }, [content]);
-
   // Find matches and highlight them
   useEffect(() => {
-    if (!findText) {
+    if (!findText || !editorRef.current) {
       setMatches([]);
       setCurrentMatch(-1);
       restoreOriginalContent();
@@ -70,36 +71,34 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       const newMatches: number[] = [];
       let match;
       
-      while ((match = regex.exec(originalContent.current)) !== null) {
+      while ((match = regex.exec(contentRef.current)) !== null) {
         newMatches.push(match.index);
       }
 
       setMatches(newMatches);
-      setCurrentMatch(newMatches.length > 0 ? 0 : -1);
-
-      // Highlight matches in the editor
-      highlightMatches(newMatches);
+      if (newMatches.length > 0) {
+        setCurrentMatch(0);
+        highlightMatches(newMatches, 0);
+      } else {
+        setCurrentMatch(-1);
+        restoreOriginalContent();
+      }
     } catch (error) {
       console.error('Invalid regex:', error);
+      setMatches([]);
+      setCurrentMatch(-1);
+      restoreOriginalContent();
     }
   }, [findText]);
 
-  // Update highlights when current match changes
-  useEffect(() => {
-    if (matches.length > 0) {
-      highlightMatches(matches);
-    }
-  }, [currentMatch]);
+  const highlightMatches = (matchIndexes: number[], currentIdx: number) => {
+    if (!editorRef.current || !findText) return;
 
-  const highlightMatches = (matchIndexes: number[]) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor || !findText) return;
-
-    let highlightedContent = originalContent.current;
+    let highlightedContent = contentRef.current;
     let offset = 0;
 
     matchIndexes.forEach((matchIndex, i) => {
-      const isCurrentMatch = i === currentMatch;
+      const isCurrentMatch = i === currentIdx;
       const beforeMatch = highlightedContent.slice(0, matchIndex + offset);
       const matchText = highlightedContent.slice(matchIndex + offset, matchIndex + offset + findText.length);
       const afterMatch = highlightedContent.slice(matchIndex + offset + findText.length);
@@ -111,28 +110,26 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       offset += highlightedMatch.length - matchText.length;
     });
 
-    editor.innerHTML = highlightedContent;
+    editorRef.current.innerHTML = highlightedContent;
   };
 
   const restoreOriginalContent = () => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      editor.innerHTML = originalContent.current;
+    if (editorRef.current) {
+      editorRef.current.innerHTML = contentRef.current;
     }
   };
 
   const handleReplace = () => {
     if (!findText || currentMatch === -1 || matches.length === 0) return;
 
-    // Create new content with replacement
     const matchIndex = matches[currentMatch];
     const newContent = 
-      originalContent.current.slice(0, matchIndex) + 
+      contentRef.current.slice(0, matchIndex) + 
       replaceText + 
-      originalContent.current.slice(matchIndex + findText.length);
+      contentRef.current.slice(matchIndex + findText.length);
 
     // Update content
-    originalContent.current = newContent;
+    contentRef.current = newContent;
     onContentChange(newContent);
 
     // Update matches
@@ -146,9 +143,13 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
 
     setMatches(newMatches);
     if (newMatches.length > 0) {
-      setCurrentMatch(Math.min(currentMatch, newMatches.length - 1));
+      const nextMatch = Math.min(currentMatch, newMatches.length - 1);
+      setCurrentMatch(nextMatch);
+      highlightMatches(newMatches, nextMatch);
+      scrollToMatch(nextMatch);
     } else {
       setCurrentMatch(-1);
+      restoreOriginalContent();
     }
   };
 
@@ -156,15 +157,13 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     if (!findText) return;
 
     try {
-      // Replace all occurrences
       const regex = new RegExp(findText, 'g');
-      const newContent = originalContent.current.replace(regex, replaceText);
+      const newContent = contentRef.current.replace(regex, replaceText);
 
       // Update content
-      originalContent.current = newContent;
+      contentRef.current = newContent;
       onContentChange(newContent);
-
-      // Close modal
+      restoreOriginalContent();
       onClose();
     } catch (error) {
       console.error('Error in replace all:', error);
@@ -179,18 +178,18 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       : (currentMatch - 1 + matches.length) % matches.length;
 
     setCurrentMatch(newCurrentMatch);
+    highlightMatches(matches, newCurrentMatch);
     scrollToMatch(newCurrentMatch);
   };
 
   const scrollToMatch = (matchIndex: number) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
+    if (!editorRef.current) return;
 
-    const highlights = Array.from(editor.querySelectorAll('.match-highlight'));
+    const highlights = Array.from(editorRef.current.querySelectorAll('.match-highlight'));
     const currentHighlight = highlights[matchIndex];
 
     if (currentHighlight) {
-      const container = editor.parentElement;
+      const container = editorRef.current.parentElement;
       if (container) {
         const highlightRect = currentHighlight.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
@@ -202,6 +201,19 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
           });
         }
       }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        navigateMatch('prev');
+      } else {
+        navigateMatch('next');
+      }
+    } else if (e.key === 'Escape') {
+      onClose();
     }
   };
 
@@ -240,6 +252,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
                 type="text"
                 value={findText}
                 onChange={(e) => setFindText(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Find..."
                 className="flex-1 bg-gray-700/50 text-white px-2 py-1 rounded text-sm"
               />
@@ -269,6 +282,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
               type="text"
               value={replaceText}
               onChange={(e) => setReplaceText(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Replace with..."
               className="w-full bg-gray-700/50 text-white px-2 py-1 rounded text-sm"
             />
