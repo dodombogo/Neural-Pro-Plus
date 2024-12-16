@@ -472,7 +472,6 @@ export const EditorView = () => {
                     onOpenFindReplace={() => setIsFindReplaceOpen(true)}
                     onSavingStateChange={setIsSaving}
                     isFindReplaceOpen={isFindReplaceOpen}
-                    projectId={projectId}
                   />
                 </motion.div>
 
