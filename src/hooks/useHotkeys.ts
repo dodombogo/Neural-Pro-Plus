@@ -71,6 +71,7 @@ export const useHotkeys = (handlers: HotkeyHandlers) => {
 
       // Ctrl+F for find and replace
       if (e.ctrlKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
         handlers.onFindReplace(e);
       }
 
