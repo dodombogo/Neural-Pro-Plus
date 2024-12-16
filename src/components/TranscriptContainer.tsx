@@ -8,6 +8,8 @@ interface TranscriptContainerProps {
   currentTime: number;
   onOpenFindReplace: () => void;
   onSavingStateChange: (isSaving: boolean) => void;
+  isFindReplaceOpen?: boolean;
+  projectId?: string;
 }
 
 export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
@@ -15,28 +17,47 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
   onContentChange,
   currentTime,
   onOpenFindReplace,
-  onSavingStateChange
+  onSavingStateChange,
+  isFindReplaceOpen = false,
+  projectId
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const lastSavedContentRef = useRef<string>(content);
 
-  // Initialize editor content
+  // Initialize editor content and try to load from localStorage
   useEffect(() => {
-    if (editorRef.current && content !== editorRef.current.innerText) {
-      editorRef.current.innerText = content;
+    if (editorRef.current && projectId) {
+      const savedContent = localStorage.getItem(`transcript_${projectId}`);
+      if (savedContent && savedContent !== editorRef.current.innerText) {
+        editorRef.current.innerText = savedContent;
+        onContentChange(savedContent);
+        lastSavedContentRef.current = savedContent;
+      } else if (content !== editorRef.current.innerText) {
+        editorRef.current.innerText = content;
+        lastSavedContentRef.current = content;
+      }
     }
-  }, [content]);
+  }, [content, projectId]);
 
   // Auto-save cleanup
   useEffect(() => {
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
+        // Save any pending changes before unmounting
+        if (editorRef.current && projectId) {
+          const currentContent = editorRef.current.innerText;
+          if (currentContent !== lastSavedContentRef.current) {
+            localStorage.setItem(`transcript_${projectId}`, currentContent);
+            lastSavedContentRef.current = currentContent;
+          }
+        }
       }
     };
-  }, []);
+  }, [projectId]);
 
   const handleCopy = async () => {
     try {
@@ -68,8 +89,16 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
 
     autoSaveTimeoutRef.current = setTimeout(() => {
       if (!editorRef.current) return;
-      const content = editorRef.current.innerText || '';
-      onContentChange(content);
+      const currentContent = editorRef.current.innerText || '';
+      
+      // Only save if content has changed
+      if (currentContent !== lastSavedContentRef.current) {
+        onContentChange(currentContent);
+        if (projectId) {
+          localStorage.setItem(`transcript_${projectId}`, currentContent);
+          lastSavedContentRef.current = currentContent;
+        }
+      }
       
       // Restore selection after content change
       if (selection && range && startOffset !== undefined && endOffset !== undefined && editorRef.current) {
@@ -149,11 +178,15 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
       >
         <div
           ref={editorRef}
-          contentEditable
+          contentEditable={!isFindReplaceOpen}
           suppressContentEditableWarning
           className="outline-none whitespace-pre-wrap text-gray-200 font-mono p-6 min-h-full text-[15px] leading-relaxed selection:bg-indigo-500/30"
           onInput={handleContentChange}
           onPaste={(e) => {
+            if (isFindReplaceOpen) {
+              e.preventDefault();
+              return;
+            }
             e.preventDefault();
             const text = e.clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);

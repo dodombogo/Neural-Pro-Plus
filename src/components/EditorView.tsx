@@ -471,6 +471,8 @@ export const EditorView = () => {
                     currentTime={currentTime}
                     onOpenFindReplace={() => setIsFindReplaceOpen(true)}
                     onSavingStateChange={setIsSaving}
+                    isFindReplaceOpen={isFindReplaceOpen}
+                    projectId={projectId}
                   />
                 </motion.div>
 

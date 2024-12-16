@@ -56,11 +56,63 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       }
       setMatches(newMatches);
       setCurrentMatch(newMatches.length > 0 ? 0 : -1);
+
+      // Highlight all matches without modifying the content
+      const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
+      if (textArea) {
+        // Store original content
+        const originalContent = content;
+        
+        // Remove existing highlights
+        const existingHighlights = textArea.querySelectorAll('.match-highlight');
+        existingHighlights.forEach(highlight => {
+          const parent = highlight.parentNode;
+          if (parent) {
+            parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
+          }
+        });
+
+        // Create a document fragment for the new content
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+
+        // Add highlights for all matches
+        newMatches.forEach((matchIndex, index) => {
+          // Add text before the match
+          if (matchIndex > lastIndex) {
+            fragment.appendChild(document.createTextNode(originalContent.substring(lastIndex, matchIndex)));
+          }
+
+          // Add the highlighted match
+          const matchText = originalContent.substr(matchIndex, findText.length);
+          const highlightSpan = document.createElement('span');
+          highlightSpan.textContent = matchText;
+          highlightSpan.className = `match-highlight ${index === currentMatch ? 'bg-indigo-500/30' : 'bg-indigo-500/20'} rounded px-0.5`;
+          fragment.appendChild(highlightSpan);
+
+          lastIndex = matchIndex + findText.length;
+        });
+
+        // Add any remaining text
+        if (lastIndex < originalContent.length) {
+          fragment.appendChild(document.createTextNode(originalContent.substring(lastIndex)));
+        }
+
+        // Update the content area
+        textArea.innerHTML = '';
+        textArea.appendChild(fragment);
+      }
     } else {
       setMatches([]);
       setCurrentMatch(-1);
+      
+      // Remove all highlights when search text is empty
+      const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
+      if (textArea) {
+        textArea.innerText = content;
+      }
     }
-  }, [findText, content]);
+  }, [findText, content, currentMatch]);
 
   const handleFindInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -131,51 +183,24 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       : (currentMatch - 1 + matches.length) % matches.length;
     setCurrentMatch(newCurrentMatch);
 
-    // Scroll to and highlight match
-    const matchPosition = matches[newCurrentMatch];
+    // Update highlight styles for all matches
     const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!textArea || !textArea.firstChild) return;
-
-    const range = document.createRange();
-    const textNode = textArea.firstChild;
-
-    // Remove any existing highlights
-    const existingHighlights = textArea.querySelectorAll('.current-match');
-    existingHighlights.forEach(highlight => {
-      const parent = highlight.parentNode;
-      if (parent) {
-        parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
-      }
-    });
-
-    // Create highlight span for current match
-    const matchText = content.substr(matchPosition, findText.length);
-    const highlightSpan = document.createElement('span');
-    highlightSpan.textContent = matchText;
-    highlightSpan.className = 'current-match bg-indigo-500/30 rounded px-0.5';
-
-    // Split text and insert highlight
-    const beforeText = document.createTextNode(content.substring(0, matchPosition));
-    const afterText = document.createTextNode(content.substring(matchPosition + findText.length));
-    
-    textArea.innerHTML = '';
-    textArea.appendChild(beforeText);
-    textArea.appendChild(highlightSpan);
-    textArea.appendChild(afterText);
-
-    // Set selection to the highlighted text
-    range.selectNodeContents(highlightSpan);
-    const selection = window.getSelection();
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(range);
-      
-      // Scroll match into view with offset
-      highlightSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (textArea) {
+      const highlights = textArea.querySelectorAll('.match-highlight');
+      highlights.forEach((highlight, index) => {
+        if (index === newCurrentMatch) {
+          highlight.classList.add('bg-indigo-500/30');
+          highlight.classList.remove('bg-indigo-500/20');
+          highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          highlight.classList.add('bg-indigo-500/20');
+          highlight.classList.remove('bg-indigo-500/30');
+        }
+      });
     }
   };
 
-  // Add effect to highlight initial matches when search text changes
+  // Remove the effect that was causing the issue
   useEffect(() => {
     if (findText && matches.length > 0) {
       navigateMatch('next');
