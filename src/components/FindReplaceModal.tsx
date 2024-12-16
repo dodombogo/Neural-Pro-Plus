@@ -77,8 +77,13 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
 
       setMatches(newMatches);
       if (newMatches.length > 0) {
-        setCurrentMatch(0);
-        highlightMatches(newMatches, 0);
+        // Keep current match if it's valid, otherwise reset to 0
+        const nextMatch = currentMatch >= 0 && currentMatch < newMatches.length 
+          ? currentMatch 
+          : 0;
+        setCurrentMatch(nextMatch);
+        highlightMatches(newMatches, nextMatch);
+        scrollToMatch(nextMatch);
       } else {
         setCurrentMatch(-1);
         restoreOriginalContent();
@@ -103,8 +108,10 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       const matchText = highlightedContent.slice(matchIndex + offset, matchIndex + offset + findText.length);
       const afterMatch = highlightedContent.slice(matchIndex + offset + findText.length);
 
-      const highlightClass = isCurrentMatch ? 'bg-indigo-500/30' : 'bg-indigo-500/20';
-      const highlightedMatch = `<span class="match-highlight ${highlightClass} rounded px-0.5">${matchText}</span>`;
+      const highlightClass = isCurrentMatch 
+        ? 'bg-indigo-500/50 text-white' 
+        : 'bg-indigo-500/20 text-gray-200';
+      const highlightedMatch = `<span class="match-highlight ${highlightClass} rounded px-0.5 transition-colors duration-150">${matchText}</span>`;
 
       highlightedContent = beforeMatch + highlightedMatch + afterMatch;
       offset += highlightedMatch.length - matchText.length;
@@ -122,7 +129,10 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
   const handleReplace = () => {
     if (!findText || currentMatch === -1 || matches.length === 0) return;
 
+    // Get the current match index
     const matchIndex = matches[currentMatch];
+
+    // Create new content with the current match replaced
     const newContent = 
       contentRef.current.slice(0, matchIndex) + 
       replaceText + 
@@ -132,7 +142,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     contentRef.current = newContent;
     onContentChange(newContent);
 
-    // Update matches
+    // Find remaining matches
     const regex = new RegExp(findText, 'gi');
     const newMatches: number[] = [];
     let match;
@@ -141,13 +151,17 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       newMatches.push(match.index);
     }
 
+    // Update matches state
     setMatches(newMatches);
+    
     if (newMatches.length > 0) {
+      // If there are more matches, stay at current index or move to previous one
       const nextMatch = Math.min(currentMatch, newMatches.length - 1);
       setCurrentMatch(nextMatch);
       highlightMatches(newMatches, nextMatch);
       scrollToMatch(nextMatch);
     } else {
+      // If no more matches, clear state and restore content
       setCurrentMatch(-1);
       restoreOriginalContent();
     }
@@ -157,12 +171,17 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     if (!findText) return;
 
     try {
+      // Replace all occurrences at once
       const regex = new RegExp(findText, 'g');
       const newContent = contentRef.current.replace(regex, replaceText);
 
       // Update content
       contentRef.current = newContent;
       onContentChange(newContent);
+      
+      // Clear state and close modal
+      setMatches([]);
+      setCurrentMatch(-1);
       restoreOriginalContent();
       onClose();
     } catch (error) {
@@ -209,6 +228,8 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       e.preventDefault();
       if (e.shiftKey) {
         navigateMatch('prev');
+      } else if (e.ctrlKey || e.metaKey) {
+        handleReplace();
       } else {
         navigateMatch('next');
       }
@@ -216,8 +237,6 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       onClose();
     }
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none">
@@ -253,7 +272,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
                 value={findText}
                 onChange={(e) => setFindText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Find..."
+                placeholder="Find... (Enter to navigate, Ctrl+Enter to replace)"
                 className="flex-1 bg-gray-700/50 text-white px-2 py-1 rounded text-sm"
               />
               <span className="text-xs text-gray-400 min-w-[40px] text-center">
@@ -263,6 +282,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
                 onClick={() => navigateMatch('prev')}
                 disabled={matches.length === 0}
                 className="p-1 hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+                title="Previous match (Shift+Enter)"
               >
                 <ArrowUp className="w-3.5 h-3.5" />
               </button>
@@ -270,6 +290,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
                 onClick={() => navigateMatch('next')}
                 disabled={matches.length === 0}
                 className="p-1 hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+                title="Next match (Enter)"
               >
                 <ArrowDown className="w-3.5 h-3.5" />
               </button>
@@ -283,7 +304,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
               value={replaceText}
               onChange={(e) => setReplaceText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Replace with..."
+              placeholder="Replace with... (Ctrl+Enter to replace current match)"
               className="w-full bg-gray-700/50 text-white px-2 py-1 rounded text-sm"
             />
           </div>
@@ -294,6 +315,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
               onClick={handleReplace}
               disabled={matches.length === 0}
               className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs transition-colors disabled:opacity-50"
+              title="Replace current match (Ctrl+Enter)"
             >
               Replace
             </button>
