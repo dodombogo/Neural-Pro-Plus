@@ -56,7 +56,9 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent) => {
     if (isFindReplaceOpen) {
+      // Prevent all paste events when Find/Replace is open
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
@@ -80,7 +82,9 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (isFindReplaceOpen) {
+      // Prevent all keyboard events when Find/Replace is open
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
   };
