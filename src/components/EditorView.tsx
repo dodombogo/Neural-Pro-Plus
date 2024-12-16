@@ -89,30 +89,8 @@ export const EditorView = () => {
       }
 
       setTranscriptContent(formattedTranscript);
-      
-      if (projectId) {
-        try {
-          const project = loadProject(projectId);
-          if (project) {
-            saveProject({
-              ...project,
-              content: formattedTranscript,
-              transcriptFormat: selectedFormat,
-              transcriptionResult: {
-                text: transcriptionResult.text,
-                utterances: transcriptionResult.utterances,
-                status: transcriptionResult.status || 'completed'
-              },
-              lastModified: Date.now()
-            });
-          }
-        } catch (error) {
-          console.error('Error saving transcription result:', error);
-          setError('Failed to save transcription result');
-        }
-      }
     }
-  }, [transcriptionResult, projectId, selectedFormat]);
+  }, [transcriptionResult, selectedFormat]);
 
   // Handle transcription errors
   useEffect(() => {
@@ -205,26 +183,6 @@ export const EditorView = () => {
 
     // Handle empty editor case
     if (!selectedFile && skipTranscription) {
-      // Create new empty project for direct editing
-      const newProject: TranscriptionProject = {
-        id: projectId || uuidv4(),
-        name: 'New Project',
-        fileName: 'New Project',
-        content: '',
-        lastModified: Date.now(),
-        segments: [],
-        mediaType: 'audio',
-        duration: 0,
-        transcriptFormat: format
-      };
-
-      // Save project
-      saveProject(newProject);
-      
-      if (!projectId) {
-        navigate(`/editor/${newProject.id}`);
-      }
-
       // Set empty state
       setFile(null);
       setFileUrl(null);
@@ -253,37 +211,6 @@ export const EditorView = () => {
       // Update state with the new file
       setFile(selectedFile);
       setFileUrl(url);
-
-      if (projectId) {
-        // For existing projects, preserve the transcription
-        const existingProject = loadProject(projectId);
-        if (existingProject) {
-          saveProject({
-            ...existingProject,
-            fileName: selectedFile.name,
-            mediaType: selectedFile.type.startsWith('video/') ? 'video' : 'audio',
-            lastModified: Date.now(),
-            transcriptFormat: format
-          });
-        }
-      } else {
-        // Create new project
-        const newProject: TranscriptionProject = {
-          id: uuidv4(),
-          name: selectedFile.name.replace(/\.[^/.]+$/, ''),
-          fileName: selectedFile.name,
-          content: '',
-          lastModified: Date.now(),
-          segments: [],
-          mediaType: selectedFile.type.startsWith('video/') ? 'video' : 'audio',
-          duration: 0,
-          transcriptFormat: format
-        };
-
-        // Save project
-        saveProject(newProject);
-        navigate(`/editor/${newProject.id}`);
-      }
 
       // Start transcription only if not skipped and it's a new project
       if (!skipTranscription && !projectId) {
@@ -320,22 +247,6 @@ export const EditorView = () => {
             const url = URL.createObjectURL(file);
             setFileUrl(url);
           }
-          
-          // Only use transcription result if there's no saved content
-          if (!project.content && project.transcriptionResult?.status === 'completed') {
-            let formattedTranscript = '';
-            
-            if (project.transcriptionResult.utterances) {
-              formattedTranscript = formatTranscript(
-                project.transcriptionResult.utterances,
-                project.transcriptFormat || selectedFormat
-              );
-            } else {
-              formattedTranscript = project.transcriptionResult.text;
-            }
-
-            setTranscriptContent(formattedTranscript);
-          }
         } else {
           setError('Project not found');
         }
@@ -358,21 +269,6 @@ export const EditorView = () => {
   // Handle transcript content updates
   const handleContentUpdate = (content: string) => {
     setTranscriptContent(content);
-    if (projectId) {
-      try {
-        const project = loadProject(projectId);
-        if (project) {
-          saveProject({
-            ...project,
-            content,
-            lastModified: Date.now()
-          });
-        }
-      } catch (error) {
-        console.error('Error saving project:', error);
-        setError('Failed to save project');
-      }
-    }
   };
 
   const onOpenSettings = () => {
