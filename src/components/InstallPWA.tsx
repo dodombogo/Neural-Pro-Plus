@@ -1,11 +1,39 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
+
+// Neural Pro+ logo SVG component
+const NeuralLogo = () => (
+  <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    {/* Background Circle */}
+    <circle cx="50" cy="50" r="45" fill="#111827"/>
+    
+    {/* Neural Network Lines */}
+    <g stroke="#60A5FA" strokeOpacity="0.5" strokeWidth="2">
+      <path d="M30 30 L50 50 L70 30"/>
+      <path d="M30 50 L50 50 L70 50"/>
+      <path d="M30 70 L50 50 L70 70"/>
+    </g>
+
+    {/* Neural Network Nodes */}
+    <g>
+      <circle cx="30" cy="30" r="4" fill="#60A5FA"/>
+      <circle cx="30" cy="50" r="4" fill="#60A5FA"/>
+      <circle cx="30" cy="70" r="4" fill="#60A5FA"/>
+      <circle cx="50" cy="50" r="6" fill="#3B82F6"/>
+      <circle cx="70" cy="30" r="4" fill="#60A5FA"/>
+      <circle cx="70" cy="50" r="4" fill="#60A5FA"/>
+      <circle cx="70" cy="70" r="4" fill="#60A5FA"/>
+    </g>
+
+    {/* Outer Ring */}
+    <circle cx="50" cy="50" r="45" stroke="#60A5FA" strokeWidth="2" fill="none"/>
+  </svg>
+);
 
 export const InstallPWA = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -81,7 +109,7 @@ export const InstallPWA = () => {
           >
             <div className="flex items-start gap-3">
               <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <Download className="w-6 h-6 text-indigo-400" />
+                <NeuralLogo />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-gray-200">Install Neural Pro+</h3>
