@@ -22,26 +22,16 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
   const [matches, setMatches] = useState<number[]>([]);
   const [currentMatch, setCurrentMatch] = useState(-1);
   const findInputRef = useRef<HTMLInputElement>(null);
-  const contentRef = useRef(content);
+  const originalContent = useRef(content);
 
-  // Update content ref when content changes
-  useEffect(() => {
-    contentRef.current = content;
-  }, [content]);
-
-  // Clear fields when modal is closed
+  // Reset state when modal is closed
   useEffect(() => {
     if (!isOpen) {
       setFindText('');
       setReplaceText('');
       setMatches([]);
       setCurrentMatch(-1);
-      
-      // Clean up any highlights in the editor
-      const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (textArea) {
-        textArea.innerHTML = contentRef.current;
-      }
+      restoreOriginalContent();
     }
   }, [isOpen]);
 
@@ -52,7 +42,7 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     }
   }, [isOpen, initialSearchText]);
 
-  // Focus input when modal opens
+  // Focus search input when modal opens
   useEffect(() => {
     if (isOpen && findInputRef.current) {
       findInputRef.current.focus();
@@ -60,26 +50,27 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     }
   }, [isOpen]);
 
-  // Handle find text changes and highlighting
+  // Update original content reference when content changes
+  useEffect(() => {
+    originalContent.current = content;
+  }, [content]);
+
+  // Find matches and highlight them
   useEffect(() => {
     if (!findText) {
       setMatches([]);
       setCurrentMatch(-1);
-      const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (textArea) {
-        textArea.innerHTML = contentRef.current;
-      }
+      restoreOriginalContent();
       return;
     }
 
     try {
+      // Find all matches
       const regex = new RegExp(findText, 'gi');
       const newMatches: number[] = [];
       let match;
-      let tempContent = contentRef.current;
-
-      // Find all matches
-      while ((match = regex.exec(tempContent)) !== null) {
+      
+      while ((match = regex.exec(originalContent.current)) !== null) {
         newMatches.push(match.index);
       }
 
@@ -87,55 +78,74 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       setCurrentMatch(newMatches.length > 0 ? 0 : -1);
 
       // Highlight matches in the editor
-      const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (textArea) {
-        let highlightedContent = tempContent;
-        let offset = 0;
-
-        newMatches.forEach((matchIndex, i) => {
-          const isCurrentMatch = i === currentMatch;
-          const beforeMatch = highlightedContent.slice(0, matchIndex + offset);
-          const matchText = highlightedContent.slice(matchIndex + offset, matchIndex + offset + findText.length);
-          const afterMatch = highlightedContent.slice(matchIndex + offset + findText.length);
-          
-          const highlightClass = isCurrentMatch ? 'bg-indigo-500/30' : 'bg-indigo-500/20';
-          const highlightedMatch = `<span class="match-highlight ${highlightClass}">${matchText}</span>`;
-          
-          highlightedContent = beforeMatch + highlightedMatch + afterMatch;
-          offset += highlightedMatch.length - matchText.length;
-        });
-
-        textArea.innerHTML = highlightedContent;
-      }
+      highlightMatches(newMatches);
     } catch (error) {
-      // Handle invalid regex
       console.error('Invalid regex:', error);
     }
-  }, [findText, currentMatch]);
+  }, [findText]);
+
+  // Update highlights when current match changes
+  useEffect(() => {
+    if (matches.length > 0) {
+      highlightMatches(matches);
+    }
+  }, [currentMatch]);
+
+  const highlightMatches = (matchIndexes: number[]) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor || !findText) return;
+
+    let highlightedContent = originalContent.current;
+    let offset = 0;
+
+    matchIndexes.forEach((matchIndex, i) => {
+      const isCurrentMatch = i === currentMatch;
+      const beforeMatch = highlightedContent.slice(0, matchIndex + offset);
+      const matchText = highlightedContent.slice(matchIndex + offset, matchIndex + offset + findText.length);
+      const afterMatch = highlightedContent.slice(matchIndex + offset + findText.length);
+
+      const highlightClass = isCurrentMatch ? 'bg-indigo-500/30' : 'bg-indigo-500/20';
+      const highlightedMatch = `<span class="match-highlight ${highlightClass} rounded px-0.5">${matchText}</span>`;
+
+      highlightedContent = beforeMatch + highlightedMatch + afterMatch;
+      offset += highlightedMatch.length - matchText.length;
+    });
+
+    editor.innerHTML = highlightedContent;
+  };
+
+  const restoreOriginalContent = () => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      editor.innerHTML = originalContent.current;
+    }
+  };
 
   const handleReplace = () => {
     if (!findText || currentMatch === -1 || matches.length === 0) return;
 
+    // Create new content with replacement
     const matchIndex = matches[currentMatch];
-    const beforeReplace = contentRef.current.slice(0, matchIndex);
-    const afterReplace = contentRef.current.slice(matchIndex + findText.length);
-    const newContent = beforeReplace + replaceText + afterReplace;
+    const newContent = 
+      originalContent.current.slice(0, matchIndex) + 
+      replaceText + 
+      originalContent.current.slice(matchIndex + findText.length);
 
     // Update content
-    contentRef.current = newContent;
+    originalContent.current = newContent;
     onContentChange(newContent);
 
     // Update matches
     const regex = new RegExp(findText, 'gi');
     const newMatches: number[] = [];
     let match;
+
     while ((match = regex.exec(newContent)) !== null) {
       newMatches.push(match.index);
     }
 
     setMatches(newMatches);
     if (newMatches.length > 0) {
-      // Stay at current index or move to previous one if at the end
       setCurrentMatch(Math.min(currentMatch, newMatches.length - 1));
     } else {
       setCurrentMatch(-1);
@@ -146,16 +156,15 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     if (!findText) return;
 
     try {
+      // Replace all occurrences
       const regex = new RegExp(findText, 'g');
-      const newContent = contentRef.current.replace(regex, replaceText);
-      
+      const newContent = originalContent.current.replace(regex, replaceText);
+
       // Update content
-      contentRef.current = newContent;
+      originalContent.current = newContent;
       onContentChange(newContent);
 
-      // Clear matches and close modal
-      setMatches([]);
-      setCurrentMatch(-1);
+      // Close modal
       onClose();
     } catch (error) {
       console.error('Error in replace all:', error);
@@ -170,29 +179,33 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
       : (currentMatch - 1 + matches.length) % matches.length;
 
     setCurrentMatch(newCurrentMatch);
+    scrollToMatch(newCurrentMatch);
+  };
 
-    // Ensure the new match is visible
-    const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (textArea) {
-      const highlights = Array.from(textArea.querySelectorAll('.match-highlight'));
-      const currentHighlight = highlights[newCurrentMatch];
-      
-      if (currentHighlight) {
-        const container = textArea.parentElement;
-        if (container) {
-          const highlightRect = currentHighlight.getBoundingClientRect();
-          const containerRect = container.getBoundingClientRect();
-          
-          if (highlightRect.top < containerRect.top || highlightRect.bottom > containerRect.bottom) {
-            currentHighlight.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center'
-            });
-          }
+  const scrollToMatch = (matchIndex: number) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
+
+    const highlights = Array.from(editor.querySelectorAll('.match-highlight'));
+    const currentHighlight = highlights[matchIndex];
+
+    if (currentHighlight) {
+      const container = editor.parentElement;
+      if (container) {
+        const highlightRect = currentHighlight.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        if (highlightRect.top < containerRect.top || highlightRect.bottom > containerRect.bottom) {
+          currentHighlight.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
         }
       }
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none">

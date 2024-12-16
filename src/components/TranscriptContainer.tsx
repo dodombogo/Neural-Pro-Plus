@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Copy, Clock, Search, Save } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Copy, Clock, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface TranscriptContainerProps {
@@ -20,6 +20,13 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isCopied, setIsCopied] = useState(false);
 
+  // Update editor content when prop changes
+  useEffect(() => {
+    if (editorRef.current && !isFindReplaceOpen) {
+      editorRef.current.innerHTML = content;
+    }
+  }, [content, isFindReplaceOpen]);
+
   const handleCopy = async () => {
     try {
       if (editorRef.current) {
@@ -33,11 +40,10 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
   };
 
   const handleContentChange = () => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || isFindReplaceOpen) return;
     onContentChange(editorRef.current.innerText);
   };
 
-  // Add paste event handler to preserve formatting
   const handlePaste = (e: React.ClipboardEvent) => {
     if (isFindReplaceOpen) {
       e.preventDefault();
@@ -47,7 +53,6 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
     
-    // Insert text at current cursor position
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -57,11 +62,16 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
       selection.removeAllRanges();
       selection.addRange(range);
       
-      // Trigger content change
       handleContentChange();
     } else {
-      // Fallback if no selection
       document.execCommand('insertText', false, text);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isFindReplaceOpen) {
+      e.preventDefault();
+      return;
     }
   };
 
@@ -116,13 +126,12 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
         <div
           ref={editorRef}
           contentEditable={!isFindReplaceOpen}
-          onInput={!isFindReplaceOpen ? handleContentChange : undefined}
-          onPaste={!isFindReplaceOpen ? handlePaste : undefined}
+          onInput={handleContentChange}
+          onPaste={handlePaste}
+          onKeyDown={handleKeyDown}
           suppressContentEditableWarning
           className="outline-none whitespace-pre-wrap text-gray-200 font-mono p-6 min-h-full text-[15px] leading-relaxed selection:bg-indigo-500/30"
-        >
-          {content}
-        </div>
+        />
       </div>
     </motion.div>
   );
