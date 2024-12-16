@@ -62,20 +62,60 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     }
   }, [findText, content]);
 
+  const handleFindInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    setFindText(e.target.value);
+  };
+
+  const handleReplaceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    setReplaceText(e.target.value);
+  };
+
   const handleReplace = () => {
     if (!findText) return;
-    const regex = new RegExp(findText, 'g');
-    const newContent = content.replace(regex, replaceText);
-    onContentChange(newContent);
-    setFindText('');
-    setReplaceText('');
-    onClose();
+    
+    const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!textArea) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const currentMatchText = range.toString();
+
+    if (currentMatchText === findText) {
+      const replacementNode = document.createTextNode(replaceText);
+      range.deleteContents();
+      range.insertNode(replacementNode);
+      
+      // Update content without adding line breaks
+      const newContent = textArea.innerText;
+      onContentChange(newContent);
+      
+      // Move to next match if available
+      const remainingMatches = matches.filter((_, index) => index > currentMatch);
+      if (remainingMatches.length > 0) {
+        navigateMatch('next');
+      } else {
+        setFindText('');
+        setReplaceText('');
+        onClose();
+      }
+    }
   };
 
   const handleReplaceAll = () => {
     if (!findText) return;
-    const regex = new RegExp(findText, 'g');
-    const newContent = content.replace(regex, replaceText);
+    
+    const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!textArea) return;
+
+    // Create a temporary div to handle the replacement
+    const tempDiv = document.createElement('div');
+    tempDiv.innerText = content;
+    const newContent = tempDiv.innerText.replace(new RegExp(findText, 'g'), replaceText);
+    
     onContentChange(newContent);
     setFindText('');
     setReplaceText('');
@@ -86,57 +126,52 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
     if (matches.length === 0) return;
     
     // Update current match index
-    if (direction === 'next') {
-      setCurrentMatch((currentMatch + 1) % matches.length);
-    } else {
-      setCurrentMatch((currentMatch - 1 + matches.length) % matches.length);
-    }
-
-    // Get the new current match index after state update
     const newCurrentMatch = direction === 'next' 
       ? (currentMatch + 1) % matches.length
       : (currentMatch - 1 + matches.length) % matches.length;
+    setCurrentMatch(newCurrentMatch);
 
     // Scroll to and highlight match
     const matchPosition = matches[newCurrentMatch];
     const textArea = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (textArea) {
-      const range = document.createRange();
-      const textNode = textArea.firstChild;
-      if (textNode) {
-        // Remove any existing highlights
-        const existingHighlights = textArea.querySelectorAll('.current-match');
-        existingHighlights.forEach(highlight => {
-          const parent = highlight.parentNode;
-          if (parent) {
-            parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
-          }
-        });
+    if (!textArea || !textArea.firstChild) return;
 
-        // Create highlight span for current match
-        const matchText = content.substr(matchPosition, findText.length);
-        const highlightSpan = document.createElement('span');
-        highlightSpan.textContent = matchText;
-        highlightSpan.className = 'current-match bg-indigo-500/30 rounded px-0.5';
+    const range = document.createRange();
+    const textNode = textArea.firstChild;
 
-        // Split text and insert highlight
-        const beforeText = document.createTextNode(content.substring(0, matchPosition));
-        const afterText = document.createTextNode(content.substring(matchPosition + findText.length));
-        
-        textArea.innerHTML = '';
-        textArea.appendChild(beforeText);
-        textArea.appendChild(highlightSpan);
-        textArea.appendChild(afterText);
-
-        // Set selection to the highlighted text
-        range.selectNodeContents(highlightSpan);
-        const selection = window.getSelection();
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-        
-        // Scroll match into view with offset
-        highlightSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Remove any existing highlights
+    const existingHighlights = textArea.querySelectorAll('.current-match');
+    existingHighlights.forEach(highlight => {
+      const parent = highlight.parentNode;
+      if (parent) {
+        parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
       }
+    });
+
+    // Create highlight span for current match
+    const matchText = content.substr(matchPosition, findText.length);
+    const highlightSpan = document.createElement('span');
+    highlightSpan.textContent = matchText;
+    highlightSpan.className = 'current-match bg-indigo-500/30 rounded px-0.5';
+
+    // Split text and insert highlight
+    const beforeText = document.createTextNode(content.substring(0, matchPosition));
+    const afterText = document.createTextNode(content.substring(matchPosition + findText.length));
+    
+    textArea.innerHTML = '';
+    textArea.appendChild(beforeText);
+    textArea.appendChild(highlightSpan);
+    textArea.appendChild(afterText);
+
+    // Set selection to the highlighted text
+    range.selectNodeContents(highlightSpan);
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Scroll match into view with offset
+      highlightSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -194,7 +229,8 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
                 ref={findInputRef}
                 type="text"
                 value={findText}
-                onChange={(e) => setFindText(e.target.value)}
+                onChange={handleFindInputChange}
+                onKeyDown={(e) => e.stopPropagation()}
                 placeholder="Find..."
                 className="flex-1 bg-gray-700/50 text-white px-2 py-1 rounded text-sm"
               />
@@ -223,7 +259,8 @@ export const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
             <input
               type="text"
               value={replaceText}
-              onChange={(e) => setReplaceText(e.target.value)}
+              onChange={handleReplaceInputChange}
+              onKeyDown={(e) => e.stopPropagation()}
               placeholder="Replace with..."
               className="w-full bg-gray-700/50 text-white px-2 py-1 rounded text-sm"
             />

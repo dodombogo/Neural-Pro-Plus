@@ -53,6 +53,12 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
   const handleContentChange = () => {
     if (!editorRef.current) return;
     
+    // Store current selection
+    const selection = window.getSelection();
+    const range = selection?.getRangeAt(0);
+    const startOffset = range?.startOffset;
+    const endOffset = range?.endOffset;
+    
     setIsSaving(true);
     onSavingStateChange(true);
     
@@ -61,7 +67,22 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
     }
 
     autoSaveTimeoutRef.current = setTimeout(() => {
-      onContentChange(editorRef.current?.innerText || '');
+      if (!editorRef.current) return;
+      const content = editorRef.current.innerText || '';
+      onContentChange(content);
+      
+      // Restore selection after content change
+      if (selection && range && startOffset !== undefined && endOffset !== undefined && editorRef.current) {
+        const newRange = document.createRange();
+        const targetNode = editorRef.current.firstChild || editorRef.current;
+        if (targetNode) {
+          newRange.setStart(targetNode, startOffset);
+          newRange.setEnd(targetNode, endOffset);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
+      
       setIsSaving(false);
       onSavingStateChange(false);
     }, 1000);
