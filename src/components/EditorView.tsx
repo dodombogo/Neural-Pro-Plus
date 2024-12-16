@@ -9,7 +9,6 @@ import { Toolbar } from './Toolbar';
 import { TranscriptContainer } from './TranscriptContainer';
 import { FindReplaceModal } from './FindReplaceModal';
 import { loadProject, saveProject } from '../utils/storage';
-import { useAutoSaveStore } from '../store/autoSaveStore';
 import { useHotkeys } from '../hooks/useHotkeys';
 import { useTranscription } from '../hooks/useTranscription';
 import { PlaybackSettings, TranscriptionProject } from '../types/types';
@@ -48,12 +47,9 @@ export const EditorView = () => {
   const [error, setError] = useState<string | null>(null);
   const [transcriptContent, setTranscriptContent] = useState('');
   const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
-  const lastSaved = useAutoSaveStore(state => state.lastSaved);
-  const setLastSaved = useAutoSaveStore(state => state.setLastSaved);
   const { defaultPlaybackSpeed, defaultVolume } = useSettingsStore();
   
   const {
@@ -371,8 +367,6 @@ export const EditorView = () => {
             content,
             lastModified: Date.now()
           });
-          // Update last saved timestamp
-          setLastSaved(new Date());
         }
       } catch (error) {
         console.error('Error saving project:', error);
@@ -470,7 +464,6 @@ export const EditorView = () => {
                     onContentChange={handleContentUpdate}
                     currentTime={currentTime}
                     onOpenFindReplace={() => setIsFindReplaceOpen(true)}
-                    onSavingStateChange={setIsSaving}
                     isFindReplaceOpen={isFindReplaceOpen}
                   />
                 </motion.div>
@@ -535,8 +528,6 @@ export const EditorView = () => {
                 playbackSettings={playbackSettings}
                 setPlaybackSettings={setPlaybackSettings}
                 fileName={file?.name || ''}
-                lastSaved={lastSaved ? lastSaved.getTime() : null}
-                isSaving={isSaving}
                 content={transcriptContent}
                 transcriptFormat={selectedFormat}
               />

@@ -9,18 +9,14 @@ interface ToolbarProps {
   playbackSettings: PlaybackSettings;
   setPlaybackSettings: (settings: PlaybackSettings) => void;
   fileName: string;
-  lastSaved: number | null;
-  isSaving: boolean;
   content: string;
-  transcriptFormat?: TranscriptFormatType;
+  transcriptFormat: TranscriptFormatType;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   playbackSettings,
   setPlaybackSettings,
   fileName,
-  lastSaved,
-  isSaving,
   content,
   transcriptFormat
 }) => {
@@ -108,20 +104,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <span className="text-xs text-indigo-400 font-medium">
               {TRANSCRIPT_FORMATS[transcriptFormat].label}
             </span>
-          </div>
-        )}
-        {lastSaved && (
-          <div className="text-xs text-gray-500">
-            {isSaving ? (
-              <span className="flex items-center gap-1">
-                <Save className="w-3 h-3 animate-pulse" />
-                Saving...
-              </span>
-            ) : (
-              <span>
-                Saved {formatDistanceToNow(lastSaved, { addSuffix: true })}
-              </span>
-            )}
           </div>
         )}
       </div>

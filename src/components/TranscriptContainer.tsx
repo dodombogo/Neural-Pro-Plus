@@ -7,7 +7,6 @@ interface TranscriptContainerProps {
   onContentChange: (content: string) => void;
   currentTime: number;
   onOpenFindReplace: () => void;
-  onSavingStateChange: (isSaving: boolean) => void;
   isFindReplaceOpen?: boolean;
 }
 
@@ -16,7 +15,6 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
   onContentChange,
   currentTime,
   onOpenFindReplace,
-  onSavingStateChange,
   isFindReplaceOpen = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
