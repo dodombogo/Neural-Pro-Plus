@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatTranscript } from '../utils/transcriptFormatter';
 import { TranscriptFormatType } from '../types/transcriptFormats';
-import { TranscriptionResult } from '../types/types';
+import { TranscriptionResponse } from '../services/assemblyAI';
 
 interface TranscriptionDisplayProps {
-  transcriptionResult: TranscriptionResult;
+  transcriptionResult: TranscriptionResponse;
   onContentChange: (content: string) => void;
   transcriptFormat: TranscriptFormatType;
 }
