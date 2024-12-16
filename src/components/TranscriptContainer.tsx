@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Copy, Clock, Search, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -9,7 +9,6 @@ interface TranscriptContainerProps {
   onOpenFindReplace: () => void;
   onSavingStateChange: (isSaving: boolean) => void;
   isFindReplaceOpen?: boolean;
-  projectId?: string;
 }
 
 export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
@@ -19,51 +18,9 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
   onOpenFindReplace,
   onSavingStateChange,
   isFindReplaceOpen = false,
-  projectId
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
-  const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const lastSavedContentRef = useRef<string>(content);
-
-  // Initialize editor content and try to load from localStorage
-  useEffect(() => {
-    if (!editorRef.current) return;
-    
-    if (projectId) {
-      const savedContent = localStorage.getItem(`transcript_${projectId}`);
-      // Only update if the editor is empty or if there's new content from props
-      if (editorRef.current.innerText.trim() === '' && savedContent) {
-        editorRef.current.innerText = savedContent;
-        onContentChange(savedContent);
-        lastSavedContentRef.current = savedContent;
-      } else if (content !== lastSavedContentRef.current) {
-        editorRef.current.innerText = content;
-        lastSavedContentRef.current = content;
-      }
-    } else if (content !== lastSavedContentRef.current) {
-      editorRef.current.innerText = content;
-      lastSavedContentRef.current = content;
-    }
-  }, [projectId]); // Only run when projectId changes
-
-  // Auto-save cleanup
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-        // Save any pending changes before unmounting
-        if (editorRef.current && projectId) {
-          const currentContent = editorRef.current.innerText;
-          if (currentContent !== lastSavedContentRef.current) {
-            localStorage.setItem(`transcript_${projectId}`, currentContent);
-            lastSavedContentRef.current = currentContent;
-          }
-        }
-      }
-    };
-  }, [projectId]);
 
   const handleCopy = async () => {
     try {
@@ -79,28 +36,7 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
 
   const handleContentChange = () => {
     if (!editorRef.current) return;
-    
-    setIsSaving(true);
-    onSavingStateChange(true);
-    
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    const currentContent = editorRef.current.innerText;
-    // Update parent immediately to keep state in sync
-    onContentChange(currentContent);
-
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      // Only save to localStorage if content has changed
-      if (currentContent !== lastSavedContentRef.current && projectId) {
-        localStorage.setItem(`transcript_${projectId}`, currentContent);
-        lastSavedContentRef.current = currentContent;
-      }
-      
-      setIsSaving(false);
-      onSavingStateChange(false);
-    }, 1000);
+    onContentChange(editorRef.current.innerText);
   };
 
   // Add paste event handler to preserve formatting
@@ -159,17 +95,6 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {isSaving && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2 text-sm text-gray-400"
-            >
-              <Save className="w-4 h-4 animate-pulse" />
-              <span>Saving...</span>
-            </motion.div>
-          )}
-          
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -197,7 +122,9 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
           onPaste={!isFindReplaceOpen ? handlePaste : undefined}
           suppressContentEditableWarning
           className="outline-none whitespace-pre-wrap text-gray-200 font-mono p-6 min-h-full text-[15px] leading-relaxed selection:bg-indigo-500/30"
-        />
+        >
+          {content}
+        </div>
       </div>
     </motion.div>
   );
