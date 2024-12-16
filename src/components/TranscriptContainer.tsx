@@ -29,18 +29,24 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
 
   // Initialize editor content and try to load from localStorage
   useEffect(() => {
-    if (editorRef.current && projectId) {
+    if (!editorRef.current) return;
+    
+    if (projectId) {
       const savedContent = localStorage.getItem(`transcript_${projectId}`);
-      if (savedContent && savedContent !== editorRef.current.innerText) {
+      // Only update if the editor is empty or if there's new content from props
+      if (editorRef.current.innerText.trim() === '' && savedContent) {
         editorRef.current.innerText = savedContent;
         onContentChange(savedContent);
         lastSavedContentRef.current = savedContent;
-      } else if (content !== editorRef.current.innerText) {
+      } else if (content !== lastSavedContentRef.current) {
         editorRef.current.innerText = content;
         lastSavedContentRef.current = content;
       }
+    } else if (content !== lastSavedContentRef.current) {
+      editorRef.current.innerText = content;
+      lastSavedContentRef.current = content;
     }
-  }, [content, projectId]);
+  }, [projectId]); // Only run when projectId changes
 
   // Auto-save cleanup
   useEffect(() => {
@@ -74,12 +80,6 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
   const handleContentChange = () => {
     if (!editorRef.current) return;
     
-    // Store current selection
-    const selection = window.getSelection();
-    const range = selection?.getRangeAt(0);
-    const startOffset = range?.startOffset;
-    const endOffset = range?.endOffset;
-    
     setIsSaving(true);
     onSavingStateChange(true);
     
@@ -87,34 +87,48 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
+    const currentContent = editorRef.current.innerText;
+    // Update parent immediately to keep state in sync
+    onContentChange(currentContent);
+
     autoSaveTimeoutRef.current = setTimeout(() => {
-      if (!editorRef.current) return;
-      const currentContent = editorRef.current.innerText || '';
-      
-      // Only save if content has changed
-      if (currentContent !== lastSavedContentRef.current) {
-        onContentChange(currentContent);
-        if (projectId) {
-          localStorage.setItem(`transcript_${projectId}`, currentContent);
-          lastSavedContentRef.current = currentContent;
-        }
-      }
-      
-      // Restore selection after content change
-      if (selection && range && startOffset !== undefined && endOffset !== undefined && editorRef.current) {
-        const newRange = document.createRange();
-        const targetNode = editorRef.current.firstChild || editorRef.current;
-        if (targetNode) {
-          newRange.setStart(targetNode, startOffset);
-          newRange.setEnd(targetNode, endOffset);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        }
+      // Only save to localStorage if content has changed
+      if (currentContent !== lastSavedContentRef.current && projectId) {
+        localStorage.setItem(`transcript_${projectId}`, currentContent);
+        lastSavedContentRef.current = currentContent;
       }
       
       setIsSaving(false);
       onSavingStateChange(false);
     }, 1000);
+  };
+
+  // Add paste event handler to preserve formatting
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (isFindReplaceOpen) {
+      e.preventDefault();
+      return;
+    }
+
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    
+    // Insert text at current cursor position
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(text));
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Trigger content change
+      handleContentChange();
+    } else {
+      // Fallback if no selection
+      document.execCommand('insertText', false, text);
+    }
   };
 
   return (
@@ -179,18 +193,10 @@ export const TranscriptContainer: React.FC<TranscriptContainerProps> = ({
         <div
           ref={editorRef}
           contentEditable={!isFindReplaceOpen}
+          onInput={!isFindReplaceOpen ? handleContentChange : undefined}
+          onPaste={!isFindReplaceOpen ? handlePaste : undefined}
           suppressContentEditableWarning
           className="outline-none whitespace-pre-wrap text-gray-200 font-mono p-6 min-h-full text-[15px] leading-relaxed selection:bg-indigo-500/30"
-          onInput={handleContentChange}
-          onPaste={(e) => {
-            if (isFindReplaceOpen) {
-              e.preventDefault();
-              return;
-            }
-            e.preventDefault();
-            const text = e.clipboardData.getData('text/plain');
-            document.execCommand('insertText', false, text);
-          }}
         />
       </div>
     </motion.div>
