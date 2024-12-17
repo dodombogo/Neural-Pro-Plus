@@ -178,4 +178,4 @@ For support, email support@neuralpro.plus or open an issue in the repository.
 ---
 
 Made with ❤️ by Trust Inc.
-# Neural-Pro-Plus
+# Neural Pro+ 🧠
