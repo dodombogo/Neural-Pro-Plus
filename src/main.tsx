@@ -2,7 +2,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { registerServiceWorker } from './utils/registerSW';
 import './index.css';
 
 const container = document.getElementById('root');
@@ -12,9 +11,6 @@ if (!container) {
 }
 
 const root = createRoot(container);
-
-// Register service worker
-registerServiceWorker();
 
 root.render(
   <React.StrictMode>

@@ -24,8 +24,20 @@ export const saveProject = (project: TranscriptionProject): void => {
       : {};
     
     projects[project.id] = {
-      ...project,
-      lastModified: Date.now()
+      id: project.id,
+      name: project.name,
+      fileName: project.fileName,
+      content: project.content,
+      lastModified: Date.now(),
+      transcriptFormat: project.transcriptFormat,
+      transcriptionResult: project.transcriptionResult ? {
+        text: project.transcriptionResult.text,
+        utterances: project.transcriptionResult.utterances,
+        status: project.transcriptionResult.status
+      } : undefined,
+      segments: [],
+      mediaType: project.mediaType,
+      duration: project.duration
     };
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));

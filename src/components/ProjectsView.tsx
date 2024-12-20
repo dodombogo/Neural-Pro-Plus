@@ -10,7 +10,7 @@ import { NeuralCard } from './NeuralCard';
 import { NeuralGradient } from './NeuralGradient';
 import { TRANSCRIPT_FORMATS } from '../types/transcriptFormats';
 
-export const ProjectsView: React.FC = () => {
+const ProjectsView: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<TranscriptionProject[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -143,3 +143,5 @@ export const ProjectsView: React.FC = () => {
     </div>
   );
 };
+
+export default ProjectsView;

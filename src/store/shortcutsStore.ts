@@ -15,7 +15,6 @@ const defaultShortcuts: KeyboardShortcut[] = [
   { id: 'seekForward5', description: 'Seek forward 5 seconds', defaultKey: 'F2', currentKey: 'F2' },
   { id: 'cycleSpeed', description: 'Change playback speed', defaultKey: 'F3', currentKey: 'F3' },
   { id: 'export', description: 'Export options', defaultKey: 'F4', currentKey: 'F4' },
-  { id: 'findReplace', description: 'Find and replace', defaultKey: 'Control+F', currentKey: 'Control+F' },
   { id: 'insertTimestamp', description: 'Insert timestamp', defaultKey: 'F8', currentKey: 'F8' },
 ];
 

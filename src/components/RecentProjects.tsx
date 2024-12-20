@@ -26,6 +26,7 @@ export const RecentProjects: React.FC = () => {
       const project = loadProject(projectId);
       if (project) {
         navigate(`/editor/${projectId}`);
+        setError(null);
       } else {
         setError('Project not found');
       }

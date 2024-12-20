@@ -1,15 +1,42 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export const InstallPWA = () => {
+// Neural Pro+ logo SVG component
+const NeuralLogo = () => (
+  <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    {/* Background Circle */}
+    <circle cx="50" cy="50" r="45" fill="#111827"/>
+    
+    {/* Neural Network Lines */}
+    <g stroke="#60A5FA" strokeOpacity="0.5" strokeWidth="2">
+      <path d="M30 30 L50 50 L70 30"/>
+      <path d="M30 50 L50 50 L70 50"/>
+      <path d="M30 70 L50 50 L70 70"/>
+    </g>
+
+    {/* Neural Network Nodes */}
+    <g>
+      <circle cx="30" cy="30" r="4" fill="#60A5FA"/>
+      <circle cx="30" cy="50" r="4" fill="#60A5FA"/>
+      <circle cx="30" cy="70" r="4" fill="#60A5FA"/>
+      <circle cx="50" cy="50" r="6" fill="#3B82F6"/>
+      <circle cx="70" cy="30" r="4" fill="#60A5FA"/>
+      <circle cx="70" cy="50" r="4" fill="#60A5FA"/>
+      <circle cx="70" cy="70" r="4" fill="#60A5FA"/>
+    </g>
+
+    {/* Outer Ring */}
+    <circle cx="50" cy="50" r="45" stroke="#60A5FA" strokeWidth="2" fill="none"/>
+  </svg>
+);
+
+const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
@@ -25,13 +52,11 @@ export const InstallPWA = () => {
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsVisible(true);
     };
 
     // Listen for installation
     const installHandler = () => {
       setIsInstalled(true);
-      setIsVisible(false);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -52,7 +77,6 @@ export const InstallPWA = () => {
       
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
-        setIsVisible(false);
         setIsInstalled(true);
         console.log('PWA installed successfully');
       } else {
@@ -63,12 +87,12 @@ export const InstallPWA = () => {
     }
   };
 
-  // Don't show if already installed
-  if (isInstalled) return null;
+  // Show prompt if not installed and installation is available
+  const shouldShowPrompt = !isInstalled && deferredPrompt !== null;
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {shouldShowPrompt && (
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -81,7 +105,7 @@ export const InstallPWA = () => {
           >
             <div className="flex items-start gap-3">
               <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <Download className="w-6 h-6 text-indigo-400" />
+                <NeuralLogo />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-gray-200">Install Neural Pro+</h3>
@@ -96,7 +120,7 @@ export const InstallPWA = () => {
                     Install Now
                   </button>
                   <button
-                    onClick={() => setIsVisible(false)}
+                    onClick={() => setDeferredPrompt(null)}
                     className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-300 transition-colors"
                   >
                     Maybe Later
@@ -110,3 +134,5 @@ export const InstallPWA = () => {
     </AnimatePresence>
   );
 };
+
+export default InstallPrompt; 

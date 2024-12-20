@@ -34,6 +34,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     let mimeType = 'text/plain';
     let fileExtension = 'txt';
 
+    // Get the editor's content with formatting
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
+
     switch (exportFormat) {
       case 'html':
         exportContent = `<!DOCTYPE html>
@@ -42,12 +46,27 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   <meta charset="utf-8">
   <title>${fileName} - Transcript</title>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    .timestamp { color: #666; font-family: monospace; }
+    body { 
+      font-family: Arial, sans-serif; 
+      line-height: 1.6; 
+      max-width: 800px; 
+      margin: 2rem auto; 
+      padding: 0 1rem; 
+    }
+    .timestamp { 
+      color: #666; 
+      font-family: monospace; 
+    }
+    .transcript-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
-  ${content.replace(/\[(\d{2}:\d{2}:\d{2})\]/g, '<span class="timestamp">[$1]</span>')}
+  <div class="transcript-content">
+    ${editor.innerHTML}
+  </div>
 </body>
 </html>`;
         mimeType = 'text/html';
@@ -55,6 +74,50 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         break;
 
       case 'doc':
+        // For .doc format, we'll use Word-specific HTML
+        exportContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset="utf-8">
+  <title>${fileName} - Transcript</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>90</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    /* Word-specific styles */
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+    .transcript-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    p {
+      margin: 0;
+      padding: 0;
+      margin-bottom: 1em;
+    }
+    br {
+      mso-data-placement: same-cell;
+    }
+  </style>
+</head>
+<body>
+  <div class="transcript-content">
+    ${editor.innerHTML
+      .replace(/\n/g, '<br clear="all"/>')
+      .replace(/<div>/g, '<p>')
+      .replace(/<\/div>/g, '</p>')
+      .replace(/<p>\s*<\/p>/g, '<p>&nbsp;</p>')}
+  </div>
+</body>
+</html>`;
         mimeType = 'application/msword';
         fileExtension = 'doc';
         break;
@@ -66,12 +129,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   <meta charset="utf-8">
   <title>${fileName} - Transcript</title>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; }
-    .timestamp { color: #666; font-family: monospace; }
+    body { 
+      font-family: Arial, sans-serif; 
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 100%;
+    }
+    .timestamp { 
+      color: #666; 
+      font-family: monospace; 
+    }
+    .transcript-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    @media print {
+      body {
+        padding: 0;
+      }
+      .transcript-content {
+        page-break-inside: auto;
+      }
+    }
   </style>
 </head>
 <body>
-  ${content.replace(/\[(\d{2}:\d{2}:\d{2})\]/g, '<span class="timestamp">[$1]</span>')}
+  <div class="transcript-content">
+    ${editor.innerHTML}
+  </div>
 </body>
 </html>`;
         
@@ -82,6 +167,27 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           printWindow.print();
         }
         return;
+
+      default:
+        // For plain text, preserve line breaks but remove HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = editor.innerHTML
+          .replace(/<div>/g, '\n')
+          .replace(/<\/div>/g, '')
+          .replace(/<br\s*\/?>/g, '\n')
+          .replace(/<p>/g, '\n')
+          .replace(/<\/p>/g, '\n');
+        
+        // Get text content and fix line breaks
+        exportContent = tempDiv.textContent || tempDiv.innerText;
+        
+        // Clean up multiple line breaks and trim
+        exportContent = exportContent
+          .replace(/\n\s*\n\s*\n/g, '\n\n')  // Replace triple line breaks with double
+          .replace(/^\s+|\s+$/g, '')          // Trim start and end
+          .replace(/\r\n|\r|\n/g, '\r\n');    // Normalize line endings to CRLF
+        
+        break;
     }
 
     try {

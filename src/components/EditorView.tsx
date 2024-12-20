@@ -7,7 +7,6 @@ import { VideoPlayer } from './VideoPlayer';
 import { ControlPanel } from './ControlPanel';
 import { Toolbar } from './Toolbar';
 import { TranscriptContainer } from './TranscriptContainer';
-import { FindReplaceModal } from './FindReplaceModal';
 import { loadProject, saveProject } from '../utils/storage';
 import { useAutoSaveStore } from '../store/autoSaveStore';
 import { useHotkeys } from '../hooks/useHotkeys';
@@ -19,8 +18,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TranscriptStats } from './TranscriptStats';
 import { TranscriptFormatType } from '../types/transcriptFormats';
 import { formatTranscript } from '../utils/transcriptFormatter';
-import { SettingsModal } from './SettingsModal';
+import SettingsModal from './SettingsModal';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+import { TranscriptionLoader } from './TranscriptionLoader';
 
 // Move API key to environment variable or configuration file
 const ASSEMBLY_API_KEY = import.meta.env.VITE_ASSEMBLY_API_KEY;
@@ -38,7 +38,7 @@ const getSpeakerLabel = (speakerId: string): string => {
   return `Speaker ${String.fromCharCode(65 + speakerNumber)}`;
 };
 
-export const EditorView = () => {
+const EditorView = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
@@ -47,7 +47,6 @@ export const EditorView = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [transcriptContent, setTranscriptContent] = useState('');
-  const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -74,6 +73,7 @@ export const EditorView = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [selectedFormat, setSelectedFormat] = useState<TranscriptFormatType>('iScribe+');
   const [selectedText, setSelectedText] = useState('');
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // Add function to get selected text
   const getSelectedText = () => {
@@ -148,12 +148,40 @@ export const EditorView = () => {
 
   // Playback speed cycling (0.5x -> 1x -> 1.5x -> 2x)
   const cyclePlaybackSpeed = () => {
-    const speeds = [0.5, 1, 1.5, 2];
-    const currentIndex = speeds.indexOf(playbackSpeed);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-    const newSpeed = speeds[nextIndex];
-    setPlaybackSpeed(newSpeed);
-    setPlaybackSettings(prev => ({ ...prev, speed: newSpeed }));
+    try {
+      const speeds = [0.5, 1, 1.5, 2];
+      const currentSpeed = playbackSettings.speed;
+      const currentIndex = speeds.indexOf(currentSpeed);
+      const nextIndex = currentIndex === -1 ? 1 : (currentIndex + 1) % speeds.length;
+      const newSpeed = speeds[nextIndex];
+
+      if (!isFinite(newSpeed)) {
+        console.error('Invalid playback speed value');
+        return;
+      }
+
+      // Update playback settings
+      setPlaybackSettings(prev => ({
+        ...prev,
+        speed: newSpeed
+      }));
+
+      // Safely update media elements
+      requestAnimationFrame(() => {
+        try {
+          if (videoRef.current) {
+            videoRef.current.playbackRate = newSpeed;
+          }
+          if (audioRef.current) {
+            audioRef.current.playbackRate = newSpeed;
+          }
+        } catch (error) {
+          console.error('Error updating media playback rate:', error);
+        }
+      });
+    } catch (error) {
+      console.error('Error cycling playback speed:', error);
+    }
   };
 
   // Use the hotkeys hook with all shortcuts
@@ -162,34 +190,41 @@ export const EditorView = () => {
     onSeekBackward5: () => seekBackward(5),
     onSeekForward5: () => seekForward(5),
     onCyclePlaybackSpeed: cyclePlaybackSpeed,
-    onFindReplace: (e: KeyboardEvent) => {
-      e.preventDefault();
-      const selected = getSelectedText();
-      setSelectedText(selected);
-      setIsFindReplaceOpen(prev => !prev);
-    },
     onInsertTimestamp: (e: KeyboardEvent) => {
       e.preventDefault();
+      
+      if (!editorRef.current) return;
+
       const time = currentTime;
       const hours = Math.floor(time / 3600).toString().padStart(2, '0');
       const minutes = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
       const seconds = Math.floor(time % 60).toString().padStart(2, '0');
       const timestamp = `[${hours}:${minutes}:${seconds}] `;
 
-      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (editor) {
-        const selection = window.getSelection();
-        const range = selection?.getRangeAt(0);
-        if (range) {
-          const textNode = document.createTextNode(timestamp);
-          range.insertNode(textNode);
-          range.collapse(false);
-          selection?.removeAllRanges();
-          selection?.addRange(range);
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
 
-          handleContentUpdate(editor.innerText);
-        }
-      }
+      const range = selection.getRangeAt(0);
+      
+      // Check if the selection is within our editor
+      if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+
+      // Save the current scroll position and selection
+      const { scrollTop } = editorRef.current;
+      const savedRange = range.cloneRange();
+
+      // Insert the timestamp using execCommand
+      document.execCommand('insertText', false, timestamp);
+
+      // Restore the scroll position
+      editorRef.current.scrollTop = scrollTop;
+
+      // Keep the editor focused
+      editorRef.current.focus();
+
+      // Let the TranscriptEditor handle content changes naturally
+      // through its own onInput handler
+      // Do NOT call handleContentUpdate here
     },
     onExport: () => {
       const exportButton = document.querySelector('[data-export-button]') as HTMLButtonElement;
@@ -197,6 +232,36 @@ export const EditorView = () => {
     },
     onSeekBackward1: () => seekBackward(1)
   });
+
+  // Load existing project
+  useEffect(() => {
+    if (projectId) {
+      try {
+        const project = loadProject(projectId);
+        if (project) {
+          // Set the saved HTML content
+          setTranscriptContent(project.content || '');
+          
+          // Set the project's format
+          if (project.transcriptFormat) {
+            setSelectedFormat(project.transcriptFormat);
+          }
+          
+          // Auto-save on first display to update lastModified
+          saveProject({
+            ...project,
+            lastModified: Date.now()
+          });
+          setLastSaved(new Date());
+        } else {
+          setError('Project not found');
+        }
+      } catch (error) {
+        console.error('Error loading project:', error);
+        setError('Failed to load project');
+      }
+    }
+  }, [projectId]);
 
   // Handle file selection for new projects
   const handleFileSelect = async (selectedFile: File | null, skipTranscription: boolean, format: TranscriptFormatType) => {
@@ -207,13 +272,16 @@ export const EditorView = () => {
 
     setSelectedFormat(format);
 
+    // Generate a new unique ID for any new project
+    const newId = projectId || uuidv4();
+
     // Handle empty editor case
     if (!selectedFile && skipTranscription) {
-      // Create new empty project for direct editing
+      // Create new project with unique ID
       const newProject: TranscriptionProject = {
-        id: projectId || uuidv4(),
-        name: 'New Project',
-        fileName: 'New Project',
+        id: newId,
+        name: `Project_${newId.slice(0, 8)}`,
+        fileName: `Project_${newId.slice(0, 8)}`,
         content: '',
         lastModified: Date.now(),
         segments: [],
@@ -224,9 +292,8 @@ export const EditorView = () => {
 
       // Save project
       saveProject(newProject);
-      
       if (!projectId) {
-        navigate(`/editor/${newProject.id}`);
+        navigate(`/editor/${newId}`);
       }
 
       // Set empty state
@@ -236,7 +303,7 @@ export const EditorView = () => {
       return;
     }
 
-    // Handle file upload case
+    // Handle new file upload case
     if (selectedFile) {
       // Check if file is a supported audio/video format
       const supportedFormats = [
@@ -250,7 +317,7 @@ export const EditorView = () => {
         setError('Unsupported file format. Please use a common audio or video format.');
         return;
       }
-
+      
       // Create object URL for the file
       const url = URL.createObjectURL(selectedFile);
       
@@ -258,39 +325,27 @@ export const EditorView = () => {
       setFile(selectedFile);
       setFileUrl(url);
 
-      if (projectId) {
-        // For existing projects, preserve the transcription
-        const existingProject = loadProject(projectId);
-        if (existingProject) {
-          saveProject({
-            ...existingProject,
-            fileName: selectedFile.name,
-            mediaType: selectedFile.type.startsWith('video/') ? 'video' : 'audio',
-            lastModified: Date.now(),
-            transcriptFormat: format
-          });
-        }
-      } else {
-        // Create new project
-        const newProject: TranscriptionProject = {
-          id: uuidv4(),
-          name: selectedFile.name.replace(/\.[^/.]+$/, ''),
-          fileName: selectedFile.name,
-          content: '',
-          lastModified: Date.now(),
-          segments: [],
-          mediaType: selectedFile.type.startsWith('video/') ? 'video' : 'audio',
-          duration: 0,
-          transcriptFormat: format
-        };
+      // Create new project with unique ID
+      const newProject: TranscriptionProject = {
+        id: newId,
+        name: `Project_${newId.slice(0, 8)}`,
+        fileName: selectedFile.name,
+        content: '',
+        lastModified: Date.now(),
+        segments: [],
+        mediaType: selectedFile.type.startsWith('video/') ? 'video' : 'audio',
+        duration: 0,
+        transcriptFormat: format
+      };
 
-        // Save project
-        saveProject(newProject);
-        navigate(`/editor/${newProject.id}`);
+      // Save project
+      saveProject(newProject);
+      if (!projectId) {
+        navigate(`/editor/${newId}`);
       }
 
-      // Start transcription only if not skipped and it's a new project
-      if (!skipTranscription && !projectId) {
+      // Start transcription if not skipped
+      if (!skipTranscription) {
         try {
           await transcribeAudio(selectedFile);
         } catch (error) {
@@ -300,55 +355,6 @@ export const EditorView = () => {
       }
     }
   };
-
-  // Load existing project
-  useEffect(() => {
-    if (projectId) {
-      try {
-        const project = loadProject(projectId);
-        if (project) {
-          // Set the saved content first
-          setTranscriptContent(project.content || '');
-          
-          // Set the project's format
-          if (project.transcriptFormat) {
-            setSelectedFormat(project.transcriptFormat);
-          }
-          
-          // If there's a saved file, load it
-          if (project.fileName !== 'New Project' && file) {
-            // Just update the file URL
-            if (fileUrl) {
-              URL.revokeObjectURL(fileUrl); // Clean up old URL
-            }
-            const url = URL.createObjectURL(file);
-            setFileUrl(url);
-          }
-          
-          // Only use transcription result if there's no saved content
-          if (!project.content && project.transcriptionResult?.status === 'completed') {
-            let formattedTranscript = '';
-            
-            if (project.transcriptionResult.utterances) {
-              formattedTranscript = formatTranscript(
-                project.transcriptionResult.utterances,
-                project.transcriptFormat || selectedFormat
-              );
-            } else {
-              formattedTranscript = project.transcriptionResult.text;
-            }
-
-            setTranscriptContent(formattedTranscript);
-          }
-        } else {
-          setError('Project not found');
-        }
-      } catch (error) {
-        console.error('Error loading project:', error);
-        setError('Failed to load project');
-      }
-    }
-  }, [projectId, file]);
 
   // Clean up file URLs on unmount
   useEffect(() => {
@@ -373,6 +379,21 @@ export const EditorView = () => {
           });
           // Update last saved timestamp
           setLastSaved(new Date());
+        } else {
+          // If project doesn't exist (shouldn't happen), create a new one with the provided ID
+          const newProject: TranscriptionProject = {
+            id: projectId,
+            name: `Project_${projectId.slice(0, 8)}`,
+            fileName: `Project_${projectId.slice(0, 8)}`,
+            content,
+            lastModified: Date.now(),
+            segments: [],
+            mediaType: file?.type.startsWith('video/') ? 'video' : 'audio',
+            duration: 0,
+            transcriptFormat: selectedFormat
+          };
+          saveProject(newProject);
+          setLastSaved(new Date());
         }
       } catch (error) {
         console.error('Error saving project:', error);
@@ -387,6 +408,17 @@ export const EditorView = () => {
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">
+      {/* Add TranscriptionLoader */}
+      <AnimatePresence>
+        {(isTranscribing || transcriptionStatus === 'uploading') && (
+          <TranscriptionLoader
+            isVisible={true}
+            progress={Number(transcriptionProgress) || 0}
+            status={transcriptionStatus}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Fixed Control Panel below header */}
       {file && (
         <div className="fixed top-16 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800">
@@ -397,7 +429,9 @@ export const EditorView = () => {
               onReset={() => setCurrentTime(0)}
               fileName={file.name}
               isTranscribing={isTranscribing}
-              transcriptionProgress={transcriptionProgress}
+              transcriptionProgress={Number(transcriptionProgress) || 0}
+              currentTime={currentTime}
+              duration={videoRef.current?.duration || audioRef.current?.duration || 0}
             />
           </div>
         </div>
@@ -466,11 +500,10 @@ export const EditorView = () => {
                   className="flex flex-col h-full"
                 >
                   <TranscriptContainer
+                    ref={editorRef}
                     content={transcriptContent}
                     onContentChange={handleContentUpdate}
                     currentTime={currentTime}
-                    onOpenFindReplace={() => setIsFindReplaceOpen(true)}
-                    onSavingStateChange={setIsSaving}
                   />
                 </motion.div>
 
@@ -541,14 +574,6 @@ export const EditorView = () => {
               />
             </motion.div>
 
-            <FindReplaceModal
-              isOpen={isFindReplaceOpen}
-              onClose={() => setIsFindReplaceOpen(false)}
-              content={transcriptContent}
-              onContentChange={handleContentUpdate}
-              initialSearchText={selectedText}
-            />
-
             <SettingsModal
               isOpen={isSettingsOpen}
               onClose={() => setIsSettingsOpen(false)}
@@ -570,3 +595,6 @@ export const EditorView = () => {
     </div>
   );
 };
+
+export default EditorView;
+

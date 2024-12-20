@@ -31,6 +31,7 @@ export interface TranscriptionProject {
   lastModified: number;
   segments: any[];
   mediaType: 'audio' | 'video';
+  mediaData?: number[];
   duration: number;
   transcriptFormat: TranscriptFormatType;
   transcriptionResult?: {

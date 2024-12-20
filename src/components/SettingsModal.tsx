@@ -4,7 +4,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { TimestampFormatSelect } from './TimestampFormatSelect';
 import { PlaybackSettings, SettingsModalProps } from '../types/types';
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ 
+const SettingsModal: React.FC<SettingsModalProps> = ({ 
   isOpen, 
   onClose,
   playbackSettings,
@@ -129,3 +129,5 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </Dialog>
   );
 };
+
+export default SettingsModal;

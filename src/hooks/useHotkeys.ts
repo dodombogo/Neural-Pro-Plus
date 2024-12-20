@@ -5,7 +5,6 @@ interface HotkeyHandlers {
   onSeekBackward5: () => void;
   onSeekForward5: () => void;
   onCyclePlaybackSpeed: () => void;
-  onFindReplace: (e: KeyboardEvent) => void;
   onInsertTimestamp: (e: KeyboardEvent) => void;
   onExport: () => void;
   onSeekBackward1: () => void;
@@ -20,10 +19,9 @@ export const useHotkeys = (handlers: HotkeyHandlers) => {
         e.target instanceof HTMLTextAreaElement ||
         (e.target instanceof HTMLElement && e.target.isContentEditable)
       ) {
-        // Allow function keys (F1-F8), Ctrl combinations, and ESC even in editable areas
+        // Allow function keys (F1-F8) and ESC even in editable areas
         if (
           e.key.startsWith('F') || // Allow all function keys
-          (e.ctrlKey && e.key.toLowerCase() === 'f') || // Allow Ctrl+F
           e.key === 'Escape' // Allow ESC
         ) {
           // Continue processing
@@ -52,7 +50,7 @@ export const useHotkeys = (handlers: HotkeyHandlers) => {
       }
 
       // F3 for cycling playback speed
-      if (e.key === 'F3') {
+      if (e.key === 'F3' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
         e.preventDefault();
         handlers.onCyclePlaybackSpeed();
       }
@@ -67,11 +65,6 @@ export const useHotkeys = (handlers: HotkeyHandlers) => {
       if (e.key === 'F8') {
         e.preventDefault();
         handlers.onInsertTimestamp(e);
-      }
-
-      // Ctrl+F for find and replace
-      if (e.ctrlKey && e.key.toLowerCase() === 'f') {
-        handlers.onFindReplace(e);
       }
 
       // Space for play/pause (as backup)

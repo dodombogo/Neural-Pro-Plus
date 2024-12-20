@@ -4,7 +4,7 @@ import { NeuralCard } from './NeuralCard';
 import { NeuralGradient } from './NeuralGradient';
 import { Link } from 'react-router-dom';
 
-export const HomeView = () => {
+const HomeView = () => {
   const features = [
     {
       icon: Brain,
@@ -242,4 +242,6 @@ export const HomeView = () => {
       </section>
     </div>
   );
-}; 
+};
+
+export default HomeView;
