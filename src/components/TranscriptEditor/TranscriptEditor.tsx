@@ -6,6 +6,7 @@ import { Toolbar } from './Toolbar';
 import { ZoomControls } from './ZoomControls';
 import './TranscriptEditor.css';
 import { ClipboardPaste } from 'lucide-react';
+import { useSettingsStore } from '../../store/settingsStore';
 
 interface TranscriptEditorProps {
   initialContent?: string;
@@ -24,6 +25,7 @@ export const TranscriptEditor = forwardRef<HTMLDivElement, TranscriptEditorProps
   const [redoStack, setRedoStack] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const autoSaveInterval = useSettingsStore(state => state.autoSaveInterval);
 
   // Refs
   const editorRef = useRef<HTMLDivElement>(null);
@@ -42,12 +44,12 @@ export const TranscriptEditor = forwardRef<HTMLDivElement, TranscriptEditorProps
   // Debounced save
   const debouncedSave = useDebounce((content: string) => {
     setIsSaving(true);
-    localStorage.setItem('transcript', content);
+    onChange?.(content);
     setTimeout(() => {
       setIsSaving(false);
       setLastSaved(new Date());
     }, 500);
-  }, 1000);
+  }, autoSaveInterval);
 
   useEffect(() => {
     loadSavedTranscript();
@@ -129,11 +131,10 @@ export const TranscriptEditor = forwardRef<HTMLDivElement, TranscriptEditorProps
         contentRef.current = newContent;
         setContent(newContent);
         saveState(newContent);
-        onChange?.(newContent);
         debouncedSave(newContent);
       }
     }
-  }, [onChange, debouncedSave]);
+  }, [debouncedSave]);
 
   const handleFontChange = (font: string) => {
     setSelectedFont(font);

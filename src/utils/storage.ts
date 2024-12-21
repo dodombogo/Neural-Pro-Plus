@@ -28,6 +28,7 @@ export const saveProject = (project: TranscriptionProject): void => {
       name: project.name,
       fileName: project.fileName,
       content: project.content,
+      createdAt: project.createdAt || Date.now(),
       lastModified: Date.now(),
       transcriptFormat: project.transcriptFormat,
       transcriptionResult: project.transcriptionResult ? {

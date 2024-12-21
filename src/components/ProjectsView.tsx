@@ -10,7 +10,7 @@ import { NeuralCard } from './NeuralCard';
 import { NeuralGradient } from './NeuralGradient';
 import { TRANSCRIPT_FORMATS } from '../types/transcriptFormats';
 
-const ProjectsView: React.FC = () => {
+export const ProjectsView: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<TranscriptionProject[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +55,15 @@ const ProjectsView: React.FC = () => {
     }
   };
 
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const getProjectIdPreview = (id: string) => {
+    return id.slice(-4);
+  };
+
   return (
     <div className="pt-20">
       {error && (
@@ -94,30 +103,34 @@ const ProjectsView: React.FC = () => {
                       <h3 className="font-medium text-gray-200 group-hover:text-cyan-500 transition-colors">
                         {project.fileName || 'Untitled Project'}
                       </h3>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-gray-400">
-                        <span>{formatDistanceToNow(project.lastModified, { addSuffix: true })}</span>
-                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => handleDelete(project.id, e)}
-                      className="p-1 hover:bg-gray-700/50 rounded-lg transition-colors"
-                      title="Delete project"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={(e) => handleDelete(project.id, e)}
+                    className="p-1 hover:bg-gray-700/50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-400" />
+                  </button>
                 </div>
 
-                {/* Format Tag */}
-                {project.transcriptFormat && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 rounded-lg border border-gray-700 w-fit">
-                    <span className="text-sm text-indigo-400 font-medium">
-                      {TRANSCRIPT_FORMATS[project.transcriptFormat].label}
-                    </span>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">Created:</p>
+                    <p className="text-gray-300">{formatDate(project.createdAt)}</p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-gray-400">Last Modified:</p>
+                    <p className="text-gray-300">{formatDate(project.lastModified)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Project ID:</p>
+                    <p className="text-gray-300 font-mono">{getProjectIdPreview(project.id)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Format:</p>
+                    <p className="text-gray-300">{project.transcriptFormat}</p>
+                  </div>
+                </div>
               </div>
             </Link>
           </NeuralCard>
@@ -143,5 +156,3 @@ const ProjectsView: React.FC = () => {
     </div>
   );
 };
-
-export default ProjectsView;

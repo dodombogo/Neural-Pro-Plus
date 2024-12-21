@@ -55,9 +55,8 @@ export const RecentProjects: React.FC = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
-  const formatPreview = (content: string) => {
-    if (!content) return '';
-    return content.slice(0, 100) + (content.length > 100 ? '...' : '');
+  const getProjectIdPreview = (id: string) => {
+    return id.slice(-4);
   };
 
   if (error) {
@@ -87,56 +86,49 @@ export const RecentProjects: React.FC = () => {
           New Project
         </button>
       </div>
-      
-      <div className="grid gap-4">
-        {recentProjects.map((project: TranscriptionProject) => (
+
+      <div className="space-y-4">
+        {recentProjects.map((project) => (
           <div
             key={project.id}
             onClick={() => handleProjectClick(project.id)}
-            className="bg-gray-900/50 hover:bg-gray-800/50 rounded-lg p-4 cursor-pointer transition-all duration-200 group border border-gray-800/50 hover:border-gray-700/50"
+            className="group relative flex items-start gap-4 p-4 bg-gray-800/50 hover:bg-gray-800/70 rounded-lg cursor-pointer transition-all duration-200"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3 flex-1">
-                <div className="flex flex-col items-start gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/10 rounded-lg">
-                      <FileText className="w-5 h-5 text-indigo-400 shrink-0" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-medium text-gray-200 truncate">
-                        {project.fileName || 'Untitled Project'}
-                      </h3>
-                    </div>
-                  </div>
+            <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-500">
+              <FileText className="w-5 h-5" />
+            </div>
 
-                  <div className="flex items-center gap-3">
-                    {project.transcriptFormat && (
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 rounded-lg border border-gray-700">
-                        <span className="text-sm text-indigo-400 font-medium">
-                          {TRANSCRIPT_FORMATS[project.transcriptFormat].label}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Clock className="w-3 h-3" />
-                      <span>{formatDate(project.lastModified)}</span>
-                    </div>
-                  </div>
+            <div className="flex-grow min-w-0">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium text-gray-200 group-hover:text-cyan-500 transition-colors truncate">
+                  {project.fileName || 'Untitled Project'}
+                </h3>
+                <button
+                  onClick={(e) => handleDeleteProject(e, project.id)}
+                  className="p-1 hover:bg-gray-700/50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-400" />
+                </button>
+              </div>
 
-                  {project.content && (
-                    <p className="text-sm text-gray-400 mt-1 line-clamp-2">
-                      {formatPreview(project.content)}
-                    </p>
-                  )}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-400">Created:</p>
+                  <p className="text-gray-300">{formatDate(project.createdAt)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Last Modified:</p>
+                  <p className="text-gray-300">{formatDate(project.lastModified)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Project ID:</p>
+                  <p className="text-gray-300 font-mono">{getProjectIdPreview(project.id)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Format:</p>
+                  <p className="text-gray-300">{project.transcriptFormat}</p>
                 </div>
               </div>
-              <button
-                onClick={(e) => handleDeleteProject(e, project.id)}
-                className="p-2 text-gray-500 hover:text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Delete project"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </div>
           </div>
         ))}

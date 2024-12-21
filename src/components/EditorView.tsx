@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TranscriptStats } from './TranscriptStats';
 import { TranscriptFormatType } from '../types/transcriptFormats';
 import { formatTranscript } from '../utils/transcriptFormatter';
-import SettingsModal from './SettingsModal';
+import { SettingsModal } from './SettingsModal';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { TranscriptionLoader } from './TranscriptionLoader';
 
@@ -38,7 +38,7 @@ const getSpeakerLabel = (speakerId: string): string => {
   return `Speaker ${String.fromCharCode(65 + speakerNumber)}`;
 };
 
-const EditorView = () => {
+export const EditorView = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
@@ -87,7 +87,10 @@ const EditorView = () => {
       let formattedTranscript = '';
       
       if (transcriptionResult.utterances) {
-        formattedTranscript = formatTranscript(transcriptionResult.utterances, selectedFormat);
+        // Use the project's existing format if available
+        const project = projectId ? loadProject(projectId) : null;
+        const format = project?.transcriptFormat || selectedFormat;
+        formattedTranscript = formatTranscript(transcriptionResult.utterances, format);
       } else {
         formattedTranscript = transcriptionResult.text;
       }
@@ -101,7 +104,7 @@ const EditorView = () => {
             saveProject({
               ...project,
               content: formattedTranscript,
-              transcriptFormat: selectedFormat,
+              transcriptFormat: project.transcriptFormat, // Preserve the original format
               transcriptionResult: {
                 text: transcriptionResult.text,
                 utterances: transcriptionResult.utterances,
@@ -270,36 +273,40 @@ const EditorView = () => {
       URL.revokeObjectURL(fileUrl);
     }
 
-    setSelectedFormat(format);
-
-    // Generate a new unique ID for any new project
-    const newId = projectId || uuidv4();
+    // If we have a projectId, load the existing project and use its format
+    const existingProject = projectId ? loadProject(projectId) : null;
+    const currentId = existingProject?.id || uuidv4();
+    
+    // Use existing format if available, otherwise use the new format
+    const projectFormat = existingProject?.transcriptFormat || format;
+    setSelectedFormat(projectFormat);
 
     // Handle empty editor case
     if (!selectedFile && skipTranscription) {
-      // Create new project with unique ID
-      const newProject: TranscriptionProject = {
-        id: newId,
-        name: `Project_${newId.slice(0, 8)}`,
-        fileName: `Project_${newId.slice(0, 8)}`,
-        content: '',
+      // Create or update project
+      const project: TranscriptionProject = {
+        id: currentId,
+        name: existingProject?.name || `Project_${currentId.slice(0, 8)}`,
+        fileName: existingProject?.fileName || `Project_${currentId.slice(0, 8)}`,
+        content: existingProject?.content || '',
+        createdAt: existingProject?.createdAt || Date.now(),
         lastModified: Date.now(),
-        segments: [],
+        segments: existingProject?.segments || [],
         mediaType: 'audio',
         duration: 0,
-        transcriptFormat: format
+        transcriptFormat: projectFormat
       };
 
       // Save project
-      saveProject(newProject);
+      saveProject(project);
       if (!projectId) {
-        navigate(`/editor/${newId}`);
+        navigate(`/editor/${currentId}`);
       }
 
       // Set empty state
       setFile(null);
       setFileUrl(null);
-      setTranscriptContent('');
+      setTranscriptContent(project.content);
       return;
     }
 
@@ -325,23 +332,24 @@ const EditorView = () => {
       setFile(selectedFile);
       setFileUrl(url);
 
-      // Create new project with unique ID
-      const newProject: TranscriptionProject = {
-        id: newId,
-        name: `Project_${newId.slice(0, 8)}`,
+      // Create or update project
+      const project: TranscriptionProject = {
+        id: currentId,
+        name: existingProject?.name || `Project_${currentId.slice(0, 8)}`,
         fileName: selectedFile.name,
-        content: '',
+        content: existingProject?.content || '',
+        createdAt: existingProject?.createdAt || Date.now(),
         lastModified: Date.now(),
-        segments: [],
+        segments: existingProject?.segments || [],
         mediaType: selectedFile.type.startsWith('video/') ? 'video' : 'audio',
         duration: 0,
-        transcriptFormat: format
+        transcriptFormat: projectFormat
       };
 
       // Save project
-      saveProject(newProject);
+      saveProject(project);
       if (!projectId) {
-        navigate(`/editor/${newId}`);
+        navigate(`/editor/${currentId}`);
       }
 
       // Start transcription if not skipped
@@ -372,27 +380,14 @@ const EditorView = () => {
       try {
         const project = loadProject(projectId);
         if (project) {
+          // Update existing project while preserving all other data
           saveProject({
             ...project,
             content,
-            lastModified: Date.now()
+            lastModified: Date.now(),
+            transcriptFormat: project.transcriptFormat // Explicitly preserve the format
           });
           // Update last saved timestamp
-          setLastSaved(new Date());
-        } else {
-          // If project doesn't exist (shouldn't happen), create a new one with the provided ID
-          const newProject: TranscriptionProject = {
-            id: projectId,
-            name: `Project_${projectId.slice(0, 8)}`,
-            fileName: `Project_${projectId.slice(0, 8)}`,
-            content,
-            lastModified: Date.now(),
-            segments: [],
-            mediaType: file?.type.startsWith('video/') ? 'video' : 'audio',
-            duration: 0,
-            transcriptFormat: selectedFormat
-          };
-          saveProject(newProject);
           setLastSaved(new Date());
         }
       } catch (error) {
@@ -595,6 +590,4 @@ const EditorView = () => {
     </div>
   );
 };
-
-export default EditorView;
 

@@ -41,7 +41,7 @@ interface WelcomeTourProps {
   onClose: () => void;
 }
 
-const WelcomeTour = ({ isOpen, onClose }: WelcomeTourProps) => {
+export const WelcomeTour = ({ isOpen, onClose }: WelcomeTourProps) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   const handleNext = () => {
@@ -137,5 +137,3 @@ const WelcomeTour = ({ isOpen, onClose }: WelcomeTourProps) => {
     </Dialog>
   );
 };
-
-export default WelcomeTour;

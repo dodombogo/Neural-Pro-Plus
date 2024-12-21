@@ -28,6 +28,7 @@ export interface TranscriptionProject {
   name: string;
   fileName: string;
   content: string;
+  createdAt: number;
   lastModified: number;
   segments: any[];
   mediaType: 'audio' | 'video';

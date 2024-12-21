@@ -7,14 +7,7 @@ import { compression } from 'vite-plugin-compression2'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    react({
-      babel: {
-        // Enable React automatic runtime
-        plugins: [
-          ['@babel/plugin-transform-react-jsx', { runtime: 'automatic' }]
-        ]
-      }
-    }),
+    react(),
     compression({
       algorithm: 'brotliCompress',
       exclude: [/\.(br)$/, /\.(gz)$/],
@@ -42,13 +35,6 @@ export default defineConfig({
       compress: {
         drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.trace'],
-      },
-      mangle: {
-        safari10: true,
-      },
-      format: {
-        comments: false,
       },
     },
     rollupOptions: {
@@ -62,16 +48,11 @@ export default defineConfig({
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
-        compact: true,
-        minifyInternalExports: true
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     },
-    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-    cssCodeSplit: true,
-    cssMinify: true,
+    chunkSizeWarningLimit: 1000,
     reportCompressedSize: true,
-    emptyOutDir: true,
   },
   server: {
     port: 5173,
@@ -83,9 +64,5 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     open: true
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-    exclude: ['@headlessui/react']
   }
 }) 
