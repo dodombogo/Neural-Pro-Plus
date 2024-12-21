@@ -8,7 +8,6 @@ import { ControlPanel } from './ControlPanel';
 import { Toolbar } from './Toolbar';
 import { TranscriptContainer } from './TranscriptContainer';
 import { loadProject, saveProject } from '../utils/storage';
-import { useAutoSaveStore } from '../store/autoSaveStore';
 import { useHotkeys } from '../hooks/useHotkeys';
 import { useTranscription } from '../hooks/useTranscription';
 import { PlaybackSettings, TranscriptionProject } from '../types/types';
@@ -51,8 +50,6 @@ export const EditorView = () => {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
-  const lastSaved = useAutoSaveStore(state => state.lastSaved);
-  const setLastSaved = useAutoSaveStore(state => state.setLastSaved);
   const { defaultPlaybackSpeed, defaultVolume } = useSettingsStore();
   
   const {
@@ -119,7 +116,7 @@ export const EditorView = () => {
         }
       }
     }
-  }, [transcriptionResult, projectId, selectedFormat]);
+  }, [transcriptionResult, selectedFormat]);
 
   // Handle transcription errors
   useEffect(() => {
@@ -364,6 +361,39 @@ export const EditorView = () => {
     }
   };
 
+  // Load existing project
+  useEffect(() => {
+    if (projectId) {
+      try {
+        const project = loadProject(projectId);
+        if (project) {
+          // Set the saved content first
+          setTranscriptContent(project.content || '');
+          
+          // Set the project's format
+          if (project.transcriptFormat) {
+            setSelectedFormat(project.transcriptFormat);
+          }
+          
+          // If there's a saved file, load it
+          if (project.fileName !== 'New Project' && file) {
+            // Just update the file URL
+            if (fileUrl) {
+              URL.revokeObjectURL(fileUrl); // Clean up old URL
+            }
+            const url = URL.createObjectURL(file);
+            setFileUrl(url);
+          }
+        } else {
+          setError('Project not found');
+        }
+      } catch (error) {
+        console.error('Error loading project:', error);
+        setError('Failed to load project');
+      }
+    }
+  }, [projectId, file]);
+
   // Clean up file URLs on unmount
   useEffect(() => {
     return () => {
@@ -499,6 +529,8 @@ export const EditorView = () => {
                     content={transcriptContent}
                     onContentChange={handleContentUpdate}
                     currentTime={currentTime}
+                    onOpenFindReplace={() => setIsFindReplaceOpen(true)}
+                    isFindReplaceOpen={isFindReplaceOpen}
                   />
                 </motion.div>
 
@@ -562,8 +594,6 @@ export const EditorView = () => {
                 playbackSettings={playbackSettings}
                 setPlaybackSettings={setPlaybackSettings}
                 fileName={file?.name || ''}
-                lastSaved={lastSaved ? lastSaved.getTime() : null}
-                isSaving={isSaving}
                 content={transcriptContent}
                 transcriptFormat={selectedFormat}
               />

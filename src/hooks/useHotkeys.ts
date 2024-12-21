@@ -8,6 +8,7 @@ interface HotkeyHandlers {
   onInsertTimestamp: (e: KeyboardEvent) => void;
   onExport: () => void;
   onSeekBackward1: () => void;
+  onFindReplace?: (e: KeyboardEvent) => void;
 }
 
 export const useHotkeys = (handlers: HotkeyHandlers) => {
@@ -65,6 +66,12 @@ export const useHotkeys = (handlers: HotkeyHandlers) => {
       if (e.key === 'F8') {
         e.preventDefault();
         handlers.onInsertTimestamp(e);
+      }
+
+      // Ctrl+F for find and replace
+      if (e.ctrlKey && e.key.toLowerCase() === 'f' && handlers.onFindReplace) {
+        e.preventDefault();
+        handlers.onFindReplace(e);
       }
 
       // Space for play/pause (as backup)

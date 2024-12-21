@@ -35,7 +35,7 @@ const NeuralLogo = () => (
   </svg>
 );
 
-const InstallPrompt = () => {
+export const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
